@@ -1,0 +1,46 @@
+# Candidate evaluation run — same dataset and metrics as baseline.yaml,
+# different (better) simulated model. Run both, then compare:
+#
+#   evalpipe run examples/baseline.yaml
+#   evalpipe run examples/candidate.yaml
+#   evalpipe runs                      # copy the two run ids
+#   evalpipe compare <baseline_id> <candidate_id>
+#
+name: qa-candidate
+dataset: examples/qa_dataset.jsonl
+
+provider:
+  type: mock
+  model: sim-large-v1
+  quality: 0.88
+  seed: 202
+  latency_ms: 40
+  input_cost_per_1k_tokens: 1.00
+  output_cost_per_1k_tokens: 4.00
+
+prompt_template: |
+  Answer the question accurately and concisely.
+
+  Question: {prompt}
+
+evaluators:
+  - type: exact_match
+    strip_punctuation: true
+  - type: token_f1
+    threshold: 0.6
+  - type: semantic_similarity
+    threshold: 0.5
+  - type: llm_judge
+    rubric: correctness
+    threshold: 0.7
+    provider:
+      type: mock
+      model: sim-judge
+      quality: 0.9
+      seed: 7
+  - type: safety
+    blocked_terms: ["confidential", "internal use only"]
+
+concurrency: 8
+retries: 2
+retry_backoff_s: 0.5

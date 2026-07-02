@@ -1,0 +1,34 @@
+# Evaluating a real model behind any OpenAI-compatible endpoint
+# (vLLM, Ollama, llama.cpp server, LM Studio, hosted APIs, ...).
+#
+# The API key is referenced by environment variable NAME — secrets never
+# live in config files:
+#
+#   export MY_PROVIDER_API_KEY=...
+#   evalpipe run examples/http_provider.yaml --min-pass-rate 0.8
+#
+name: qa-live-endpoint
+dataset: examples/qa_dataset.jsonl
+
+provider:
+  type: openai_compatible
+  model: my-model-name
+  base_url: http://localhost:11434/v1   # e.g. an Ollama instance
+  api_key_env: MY_PROVIDER_API_KEY      # optional for local endpoints
+  temperature: 0.0
+  max_tokens: 256
+  timeout_s: 30
+  input_cost_per_1k_tokens: 0.0
+  output_cost_per_1k_tokens: 0.0
+
+evaluators:
+  - type: token_f1
+    threshold: 0.6
+  - type: semantic_similarity
+    threshold: 0.5
+  - type: contains
+    mode: any            # falls back to each item's expected answer as the needle
+
+concurrency: 4
+retries: 3
+retry_backoff_s: 1.0
