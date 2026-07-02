@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: pip install -e .[dev]
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format check
+        run: ruff format --check .
+      - name: Mypy
+        run: mypy
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install
+        run: pip install -e .[dev]
+      - name: Run tests with coverage
+        run: pytest --cov --cov-fail-under=85 --cov-report=term-missing
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t evalpipe:ci .
+      - name: Smoke test image
+        run: |
+          docker run -d --name evalpipe -p 8000:8000 evalpipe:ci
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/api/health > /dev/null 2>&1; then
+              echo "Service healthy" && exit 0
+            fi
+            sleep 1
+          done
+          echo "Service failed to become healthy" && docker logs evalpipe && exit 1

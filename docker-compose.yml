@@ -1,0 +1,13 @@
+services:
+  evalpipe:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - evalpipe-data:/data
+    environment:
+      EVALPIPE_DB: /data/evalpipe.db
+    restart: unless-stopped
+
+volumes:
+  evalpipe-data:
