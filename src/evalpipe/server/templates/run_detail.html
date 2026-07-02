@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_chip, pass_chip %}
+{% set active_nav = 'dashboard' %}
+{% block title %}{{ run.name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Dashboard</a> / run detail</nav>
+<h1 class="page-title">{{ run.name }} <span class="text-2" style="font-weight:400">· {{ run.model }}</span></h1>
+<p class="page-subtitle">
+  {{ status_chip(run.status) }}
+  &nbsp; dataset <span class="mono">{{ run.dataset }}</span>
+  &nbsp; started {{ run.started_at[:19].replace('T', ' ') }} UTC
+  &nbsp; run id <span class="mono">{{ run.id }}</span>
+</p>
+
+{% if run.status == 'failed' %}
+<div class="verdict bad" role="alert">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+  <div>
+    <div class="title">Run failed</div>
+    <div class="detail">{{ run.error }}</div>
+  </div>
+</div>
+{% elif run.status == 'running' %}
+<div class="card empty-state"><p>This run is still executing — refresh to see results.</p></div>
+{% else %}
+
+<div class="grid kpis">
+  <div class="card stat-tile">
+    <div class="label">Pass rate</div>
+    <div class="value">{{ '%.1f' % (run.pass_rate * 100) }}%</div>
+    <div class="footnote">95% CI {{ '%.1f' % (pass_ci[0] * 100) }}% – {{ '%.1f' % (pass_ci[1] * 100) }}% (Wilson)</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Mean score</div>
+    <div class="value">{{ '%.3f' % run.mean_score }}</div>
+    <div class="footnote">{{ run.item_count }} items · {{ run.error_count }} error(s)</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Latency</div>
+    <div class="value">{{ '%.0f' % run.latency_p50_ms }} ms</div>
+    <div class="footnote">p50 · p95 {{ '%.0f' % run.latency_p95_ms }} ms</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Estimated cost</div>
+    <div class="value">${{ '%.4f' % run.total_cost_usd }}</div>
+    <div class="footnote">token-based estimate</div>
+  </div>
+</div>
+
+<div class="grid cols-2">
+  <div class="card chart-card">
+    <h2>Score distribution</h2>
+    <p class="card-note">Per-item mean score across all evaluators, 10 bins.</p>
+    <div class="chart" data-chart="bar">
+      <script type="application/json">{{ {'bars': histogram, 'yLabel': 'items'} | tojson }}</script>
+    </div>
+    <details class="chart-data">
+      <summary>View data table</summary>
+      <table class="data">
+        <thead><tr><th scope="col">Score bin</th><th scope="col" class="num">Items</th></tr></thead>
+        <tbody>
+          {% for bin in histogram %}<tr><td>{{ bin.label }}</td><td class="num">{{ bin.value }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </details>
+  </div>
+  <div class="card chart-card">
+    <h2>Mean score by evaluator</h2>
+    <p class="card-note">How each metric graded this run, on a 0–1 scale.</p>
+    <div class="chart" data-chart="hbar">
+      <script type="application/json">{{ {'bars': evaluator_means, 'max': 1} | tojson }}</script>
+    </div>
+    <details class="chart-data">
+      <summary>View data table</summary>
+      <table class="data">
+        <thead><tr><th scope="col">Evaluator</th><th scope="col" class="num">Mean score</th></tr></thead>
+        <tbody>
+          {% for row in evaluator_means %}<tr><td>{{ row.label }}</td><td class="num">{{ '%.3f' % row.value }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </details>
+  </div>
+</div>
+
+<div class="filter-row">
+  <h2 style="font-size:16px;margin:0">Item results</h2>
+  <nav class="segmented" aria-label="Filter results by outcome">
+    <a href="/runs/{{ run.id }}?outcome=all" {% if outcome == 'all' %}aria-current="true"{% endif %}>All</a>
+    <a href="/runs/{{ run.id }}?outcome=passed" {% if outcome == 'passed' %}aria-current="true"{% endif %}>Passed</a>
+    <a href="/runs/{{ run.id }}?outcome=failed" {% if outcome == 'failed' %}aria-current="true"{% endif %}>Failed</a>
+  </nav>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th scope="col">Item</th>
+          <th scope="col">Outcome</th>
+          <th scope="col" class="num">Score</th>
+          <th scope="col" class="num">Latency</th>
+          <th scope="col">Output</th>
+          <th scope="col"><span class="visually-hidden">Details</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in results %}
+        <tr>
+          <td class="mono nowrap">{{ result.item_id }}</td>
+          <td>{{ pass_chip(result.passed) }}</td>
+          <td class="num">{{ '%.3f' % result.mean_score }}</td>
+          <td class="num">{{ '%.0f' % result.latency_ms }} ms</td>
+          <td class="text-2">{{ (result.error or result.output)[:90] }}{% if (result.error or result.output)|length > 90 %}…{% endif %}</td>
+          <td>
+            <details class="row-details">
+              <summary>Details</summary>
+              <div class="detail-block"><h4>Prompt</h4><p>{{ result.prompt }}</p></div>
+              {% if result.expected %}<div class="detail-block"><h4>Expected</h4><p>{{ result.expected }}</p></div>{% endif %}
+              <div class="detail-block"><h4>Model output</h4><p>{{ result.output or '(empty)' }}</p></div>
+              {% if result.error %}<div class="detail-block"><h4>Error</h4><p>{{ result.error }} ({{ result.attempts }} attempt(s))</p></div>{% endif %}
+              <ul class="score-list">
+                {% for score in result.scores %}
+                <li>
+                  <span class="name">{{ score.name }}</span>
+                  {{ pass_chip(score.passed) }}
+                  <span>{{ '%.3f' % score.score }}</span>
+                  {% if score.detail %}<span class="detail">{{ score.detail }}</span>{% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-2">No items match this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_chip %}
+{% set active_nav = 'dashboard' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Evaluation dashboard</h1>
+<p class="page-subtitle">Benchmark history, pass rates and model quality over time.</p>
+
+{% if not latest %}
+<div class="card empty-state">
+  <p><strong>No completed runs yet.</strong></p>
+  <p>Seed an offline demo history with <code>evalpipe demo</code>, or run your own config with <code>evalpipe run config.yaml</code>.</p>
+</div>
+{% else %}
+
+<div class="grid kpis">
+  <div class="card stat-tile">
+    <div class="label">Latest pass rate</div>
+    <div class="value">{{ '%.1f' % (latest.pass_rate * 100) }}%</div>
+    {% if delta is not none %}
+    <div class="delta {{ 'up' if delta > 0 else ('down' if delta < 0 else 'flat') }}">
+      {% if delta > 0 %}▲{% elif delta < 0 %}▼{% else %}—{% endif %}
+      {{ '%+.1f' % (delta * 100) }} pts vs previous run
+    </div>
+    {% endif %}
+    <div class="footnote">{{ latest.name }} · {{ latest.model }}</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Latest mean score</div>
+    <div class="value">{{ '%.3f' % latest.mean_score }}</div>
+    <div class="footnote">across {{ latest.item_count }} items</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Total runs</div>
+    <div class="value">{{ total_runs }}</div>
+    <div class="footnote">{{ total_items }} items evaluated</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Estimated spend</div>
+    <div class="value">${{ '%.2f' % total_cost }}</div>
+    <div class="footnote">across completed runs</div>
+  </div>
+</div>
+
+<div class="card chart-card">
+  <h2>Pass rate over runs</h2>
+  <p class="card-note">Chronological, completed runs only. Hover or focus a point for details.</p>
+  <div class="chart" data-chart="line">
+    <script type="application/json">{{ {'points': trend, 'format': 'percent'} | tojson }}</script>
+  </div>
+  <details class="chart-data">
+    <summary>View data table</summary>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th scope="col">Run</th><th scope="col" class="num">Pass rate</th></tr></thead>
+        <tbody>
+          {% for point in trend %}
+          <tr><td><a href="/runs/{{ point.run_id }}">{{ point.label }}</a></td><td class="num">{{ '%.1f' % (point.value * 100) }}%</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Recent runs</h2>
+  <p class="card-note">Most recent first. Open a run for per-item results and score distributions.</p>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th scope="col">Run</th>
+          <th scope="col">Model</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="num">Items</th>
+          <th scope="col" class="num">Pass rate</th>
+          <th scope="col" class="num">Mean score</th>
+          <th scope="col" class="num">p95 latency</th>
+          <th scope="col" class="num">Est. cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+        <tr>
+          <td><a href="/runs/{{ record.id }}">{{ record.name }}</a></td>
+          <td class="nowrap">{{ record.model }}</td>
+          <td>{{ status_chip(record.status) }}</td>
+          <td class="num">{{ record.item_count }}</td>
+          <td class="num">{% if record.status == 'completed' %}{{ '%.1f' % (record.pass_rate * 100) }}%{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="num">{% if record.status == 'completed' %}{{ '%.3f' % record.mean_score }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="num">{% if record.status == 'completed' %}{{ '%.0f' % record.latency_p95_ms }} ms{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="num">{% if record.status == 'completed' %}${{ '%.4f' % record.total_cost_usd }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

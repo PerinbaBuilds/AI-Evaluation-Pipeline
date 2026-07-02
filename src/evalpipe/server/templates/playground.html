@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active_nav = 'playground' %}
+{% block title %}Playground{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Playground</h1>
+<p class="page-subtitle">Online evaluation: send one prompt to two providers side by side and compare output, latency and cost.</p>
+
+<form id="pg-form" class="card" style="margin-bottom:16px">
+  <div class="field">
+    <label for="pg-prompt">Prompt</label>
+    <textarea id="pg-prompt" required maxlength="20000" placeholder="What is the capital of France?"></textarea>
+  </div>
+  <div class="field">
+    <label for="pg-reference">Reference answer <span class="hint" style="display:inline">(optional — lets simulation providers grade themselves realistically)</span></label>
+    <input type="text" id="pg-reference" placeholder="The capital of France is Paris.">
+  </div>
+
+  <div class="pg-columns">
+    {% for side in ['a', 'b'] %}
+    <fieldset class="card" style="box-shadow:none">
+      <legend style="font-weight:650;font-size:14px;padding:0 6px">Provider {{ side | upper }}</legend>
+      <div class="field">
+        <label for="pg-type-{{ side }}">Type</label>
+        <select id="pg-type-{{ side }}" data-side="{{ side }}" class="pg-type">
+          <option value="mock" selected>Simulation (offline, deterministic)</option>
+          <option value="openai_compatible">OpenAI-compatible HTTP endpoint</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="pg-model-{{ side }}">Model name</label>
+        <input type="text" id="pg-model-{{ side }}" value="{{ 'sim-small-v3' if side == 'a' else 'sim-large-v1' }}">
+      </div>
+      <div class="field pg-mock-only" data-side="{{ side }}">
+        <label for="pg-quality-{{ side }}">Simulated quality (0–1)</label>
+        <input type="number" id="pg-quality-{{ side }}" min="0" max="1" step="0.05" value="{{ '0.7' if side == 'a' else '0.9' }}">
+      </div>
+      <div class="field pg-http-only" data-side="{{ side }}" hidden>
+        <label for="pg-url-{{ side }}">Base URL</label>
+        <input type="url" id="pg-url-{{ side }}" placeholder="http://localhost:11434/v1">
+        <div class="hint">Endpoint must speak the OpenAI chat-completions format (vLLM, Ollama, llama.cpp, hosted APIs). API keys are read from server-side environment variables, never entered here.</div>
+      </div>
+      <div class="field pg-http-only" data-side="{{ side }}" hidden>
+        <label for="pg-keyenv-{{ side }}">API key environment variable <span class="hint" style="display:inline">(optional)</span></label>
+        <input type="text" id="pg-keyenv-{{ side }}" placeholder="MY_PROVIDER_API_KEY">
+      </div>
+    </fieldset>
+    {% endfor %}
+  </div>
+
+  <button class="btn" type="submit" id="pg-submit" style="margin-top:14px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 3 14 9-14 9V3Z"/></svg>
+    Run side by side
+  </button>
+</form>
+
+<div id="pg-results" class="pg-columns" hidden>
+  {% for side in ['a', 'b'] %}
+  <div class="card">
+    <h2 id="pg-result-model-{{ side }}">Provider {{ side | upper }}</h2>
+    <div class="pg-output" id="pg-result-output-{{ side }}" aria-live="polite"></div>
+    <div class="pg-meta">
+      <span>Latency <strong id="pg-result-latency-{{ side }}">—</strong></span>
+      <span>Est. cost <strong id="pg-result-cost-{{ side }}">—</strong></span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div id="pg-error" class="pg-error" role="alert" hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/playground.js" defer></script>
+{% endblock %}
