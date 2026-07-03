@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from tests.conftest import make_config, make_items
 
 from evalpipe.evaluators import build_evaluators
 from evalpipe.exceptions import StorageError
@@ -13,6 +12,7 @@ from evalpipe.pipeline import execute_run
 from evalpipe.providers.mock import MockProvider
 from evalpipe.runner import RunResult, run_evaluation
 from evalpipe.storage import Storage
+from tests.conftest import make_config, make_items
 
 
 def run_result(config_dataset: str, *, run_id: str = "run-1", quality: float = 1.0) -> RunResult:

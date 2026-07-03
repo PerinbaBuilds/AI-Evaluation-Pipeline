@@ -6,11 +6,11 @@ import re
 from pathlib import Path
 
 import yaml
-from tests.conftest import make_config
 from typer.testing import CliRunner
 
 from evalpipe.cli import app
 from evalpipe.storage import Storage
+from tests.conftest import make_config
 
 runner = CliRunner()
 

@@ -7,11 +7,11 @@ import time
 
 import pytest
 from fastapi.testclient import TestClient
-from tests.conftest import make_config
 
 from evalpipe.pipeline import execute_run
 from evalpipe.server.app import create_app
 from evalpipe.storage import Storage
+from tests.conftest import make_config
 
 
 @pytest.fixture

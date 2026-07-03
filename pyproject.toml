@@ -61,6 +61,9 @@ ignore = ["B008"]  # Typer uses function calls in argument defaults by design
 [tool.ruff.lint.per-file-ignores]
 "src/evalpipe/demo.py" = ["E501"]  # demo dataset literals read better on one line each
 
+[tool.ruff.lint.isort]
+known-first-party = ["evalpipe", "tests"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

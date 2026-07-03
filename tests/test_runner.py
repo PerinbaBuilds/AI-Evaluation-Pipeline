@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from tests.conftest import make_config, make_items
 
 from evalpipe.config import ExactMatchConfig, MockProviderConfig
 from evalpipe.datasets import DatasetItem
@@ -15,6 +14,7 @@ from evalpipe.exceptions import ProviderError
 from evalpipe.providers.base import ModelProvider, ModelResponse
 from evalpipe.providers.mock import MockProvider
 from evalpipe.runner import run_evaluation
+from tests.conftest import make_config, make_items
 
 
 class FlakyProvider(ModelProvider):
