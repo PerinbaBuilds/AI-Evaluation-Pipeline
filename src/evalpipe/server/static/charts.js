@@ -10,12 +10,12 @@
   "use strict";
 
   var TOKENS = {
-    surface: "#fcfcfb",
-    ink: "#0b0b0b",
-    ink2: "#52514e",
-    muted: "#898781",
-    grid: "#e1e0d9",
-    baseline: "#c3c2b7",
+    surface: "#fffdf8",
+    ink: "#191613",
+    ink2: "#4f4a3e",
+    muted: "#7c766a",
+    grid: "#e6e0d0",
+    baseline: "#b9b29c",
     series: ["#2a78d6", "#1baf7a"],
   };
 
@@ -225,7 +225,7 @@
         var cap = el("text", { x: x + barW / 2, y: sy(b.value) - 5, "text-anchor": "middle", "font-size": 11.5, "font-weight": 600, fill: TOKENS.ink }, svg);
         cap.textContent = formatValue(b.value, null);
       }
-      if (bars.length <= 12 || i % 2 === 0) {
+      if (bars.length <= 6 || i % 2 === 0) {
         var xl = el("text", { x: margin.left + i * band + band / 2, y: margin.top + plotH + 16, "text-anchor": "middle", "font-size": 10.5, fill: TOKENS.muted }, svg);
         xl.textContent = b.label;
       }
