@@ -9,15 +9,27 @@
 (function () {
   "use strict";
 
-  var TOKENS = {
-    surface: "#fffdf8",
-    ink: "#191613",
-    ink2: "#4f4a3e",
-    muted: "#7c766a",
-    grid: "#e6e0d0",
-    baseline: "#b9b29c",
-    series: ["#2a78d6", "#1baf7a"],
-  };
+  var DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  var TOKENS = DARK
+    ? {
+        surface: "#1d1a13",
+        ink: "#f2ebdd",
+        ink2: "#b6ac97",
+        muted: "#837a67",
+        grid: "#282219",
+        baseline: "#3d3628",
+        series: ["#3987e5", "#199e70"],
+      }
+    : {
+        surface: "#fffdf8",
+        ink: "#26221b",
+        ink2: "#5d5445",
+        muted: "#948a76",
+        grid: "#ece4d5",
+        baseline: "#cfc5b1",
+        series: ["#2a78d6", "#1baf7a"],
+      };
 
   var SVG_NS = "http://www.w3.org/2000/svg";
 
