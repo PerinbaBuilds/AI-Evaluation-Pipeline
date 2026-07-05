@@ -13,21 +13,21 @@
 
   var TOKENS = DARK
     ? {
-        surface: "#1d1a13",
-        ink: "#f2ebdd",
-        ink2: "#b6ac97",
-        muted: "#837a67",
-        grid: "#282219",
-        baseline: "#3d3628",
+        surface: "#16181b",
+        ink: "#ecebe8",
+        ink2: "#a7a49c",
+        muted: "#6f6d66",
+        grid: "#1f2226",
+        baseline: "#3a3e44",
         series: ["#3987e5", "#199e70"],
       }
     : {
-        surface: "#fffdf8",
-        ink: "#26221b",
-        ink2: "#5d5445",
-        muted: "#948a76",
-        grid: "#ece4d5",
-        baseline: "#cfc5b1",
+        surface: "#ffffff",
+        ink: "#1b1a17",
+        ink2: "#57554e",
+        muted: "#8d8b81",
+        grid: "#eeece5",
+        baseline: "#ceccc2",
         series: ["#2a78d6", "#1baf7a"],
       };
 

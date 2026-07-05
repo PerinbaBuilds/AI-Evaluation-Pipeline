@@ -6,33 +6,53 @@
   <title>{% block title %}EvalPipe{% endblock %} · EvalPipe</title>
   <meta name="description" content="EvalPipe — evaluation pipeline for LLM applications: benchmark runs, metrics, and statistical A/B testing.">
   <link rel="stylesheet" href="/static/styles.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23b0563d'/%3E%3Cpath d='M6 15.5 10 10l3 3.5L18 7' stroke='%23fffdf8' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230f766e'/%3E%3Cpath d='M6 15.5 10 10l3 3.5L18 7' stroke='%23fff' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
-  <header class="site-header">
-    <div class="inner">
+  <div class="app">
+    <aside class="sidebar">
       <a class="brand" href="/">
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <rect width="24" height="24" rx="6" fill="#b0563d"/>
-          <path d="M6 15.5 10 10l3 3.5L18 7" stroke="#fffdf8" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+          <rect width="24" height="24" rx="6" fill="#0f766e"/>
+          <path d="M6 15.5 10 10l3 3.5L18 7" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        EvalPipe
+        <span>EvalPipe</span>
       </a>
-      <nav class="site-nav" aria-label="Primary">
-        <a href="/" {% if active_nav == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
-        <a href="/compare" {% if active_nav == 'compare' %}aria-current="page"{% endif %}>A/B Compare</a>
-        <a href="/playground" {% if active_nav == 'playground' %}aria-current="page"{% endif %}>Playground</a>
-        <a href="/docs">API docs</a>
+
+      <nav class="side-nav" aria-label="Primary">
+        <span class="side-label">Workspace</span>
+        <a href="/" {% if active_nav == 'dashboard' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/></svg>
+          Overview
+        </a>
+        <a href="/compare" {% if active_nav == 'compare' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
+          A/B Compare
+        </a>
+        <a href="/playground" {% if active_nav == 'playground' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          Playground
+        </a>
+        <span class="side-label">Reference</span>
+        <a href="/docs">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 6-5 6 5 6M16 6l5 6-5 6"/></svg>
+          API reference
+        </a>
       </nav>
+
+      <div class="side-foot">
+        <div class="side-tag">Provider-agnostic evaluation for LLM applications.</div>
+        <div class="side-ver">v1.0.0</div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <main id="main" class="content">
+        {% block content %}{% endblock %}
+      </main>
     </div>
-  </header>
-  <main id="main">
-    {% block content %}{% endblock %}
-  </main>
-  <footer class="site-footer">
-    EvalPipe — provider-agnostic evaluation pipeline for LLM applications.
-  </footer>
+  </div>
   <script src="/static/charts.js" defer></script>
   {% block scripts %}{% endblock %}
 </body>
