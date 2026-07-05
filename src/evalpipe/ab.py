@@ -55,6 +55,10 @@ class ABReport:
     score_bootstrap_ci: tuple[float, float]
     alpha: float
     verdict: Verdict
+    n_regressions: int = 0
+    n_improvements: int = 0
+    regressed_ids: list[str] = field(default_factory=list)
+    improved_ids: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
 
@@ -93,6 +97,17 @@ def compare(
     cand_scores = [outcome.score for outcome in cand]
     score_test = welch_t_test(base_scores, cand_scores, confidence=1.0 - alpha)
 
+    regressed_ids = [
+        item_id
+        for item_id, b, c in zip(common_ids, base, cand, strict=True)
+        if b.passed and not c.passed
+    ]
+    improved_ids = [
+        item_id
+        for item_id, b, c in zip(common_ids, base, cand, strict=True)
+        if not b.passed and c.passed
+    ]
+
     report = ABReport(
         baseline_name=baseline_name,
         candidate_name=candidate_name,
@@ -110,6 +125,10 @@ def compare(
         score_bootstrap_ci=bootstrap_mean_diff_ci(base_scores, cand_scores, seed=bootstrap_seed),
         alpha=alpha,
         verdict=_verdict(pass_rate_test, score_test, alpha),
+        n_regressions=len(regressed_ids),
+        n_improvements=len(improved_ids),
+        regressed_ids=regressed_ids,
+        improved_ids=improved_ids,
     )
     _collect_warnings(report)
     return report

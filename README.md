@@ -36,6 +36,12 @@ baseline, or is the difference just noise?"*
   Zero numeric dependencies; every function is verified against published table values.
 - **Honest A/B verdicts** — runs are paired by item id, tested at a configurable α, and
   small samples produce explicit *underpowered* warnings instead of false confidence.
+- **Item-level regression diff** — the A/B view names exactly which items flipped
+  pass→fail (regressions) vs fail→pass (improvements), the failures an aggregate hides.
+- **Response cache** — opt-in memoisation of model outputs by `(model, prompt)`, so you
+  can iterate on metrics and thresholds and re-score for free without re-running inference.
+- **Export & observability** — download any run's results as CSV/JSON, and scrape
+  aggregate counters from a Prometheus `/metrics` endpoint.
 - **Latency & cost tracking** — p50/p95 latency and token-based cost estimates per run,
   so the quality/latency/cost trade-off is visible on one screen.
 - **Prompt management** — versioned prompt templates stored alongside results, so every
@@ -209,10 +215,12 @@ Interactive OpenAPI docs at `/docs` when serving. Highlights:
 | Endpoint | Description |
 |---|---|
 | `GET /api/health` | health/version probe (used by the Docker healthcheck) |
+| `GET /metrics` | Prometheus exposition of aggregate counters |
 | `GET /api/runs` · `GET /api/runs/{id}` | run history and summaries |
 | `GET /api/runs/{id}/results` | per-item results, filterable by outcome |
+| `GET /api/runs/{id}/export?format=csv\|json` | download a run's results |
 | `POST /api/runs` | launch an evaluation (validated up front, executed in background) |
-| `GET /api/compare?baseline=&candidate=` | full statistical comparison |
+| `GET /api/compare?baseline=&candidate=` | full statistical comparison + regression diff |
 | `POST /api/playground` | one prompt against up to four providers, side by side |
 | `GET/POST /api/prompts` | versioned prompt templates |
 

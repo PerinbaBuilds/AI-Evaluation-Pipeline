@@ -564,6 +564,36 @@ details.row-details summary:hover { text-decoration: underline; }
 .score-list .name { font-weight: 550; min-width: 190px; }
 .score-list .detail { color: var(--ink-2); }
 
+/* copy button + id lists (regression diff) */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  margin-left: 4px;
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.copy-btn:hover { background: var(--surface-hover); color: var(--ink); }
+.copy-btn.copied { color: var(--good-text); border-color: var(--good-border); background: var(--good-bg); }
+
+.id-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.id-list code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.table-filter { font-size: 13px; }
+
 .nowrap { white-space: nowrap; }
 .text-2 { color: var(--ink-2); }
 .text-muted { color: var(--muted); }

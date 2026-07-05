@@ -182,3 +182,41 @@ class TestPrompts:
         with pytest.raises(StorageError, match="version 9"):
             storage.save_prompt("qa", "x {prompt}")
             storage.get_prompt("qa", version=9)
+
+
+class TestResponseCache:
+    def test_put_get_roundtrip(self, db_path: str) -> None:
+        storage = Storage(db_path)
+        assert storage.get_cached_response("k") is None
+        storage.put_cached_response("k", "m", "hello", 3, 5)
+        assert storage.get_cached_response("k") == ("hello", 3, 5)
+        assert storage.cache_size() == 1
+
+    def test_put_is_idempotent_on_key(self, db_path: str) -> None:
+        storage = Storage(db_path)
+        storage.put_cached_response("k", "m", "one", 1, 1)
+        storage.put_cached_response("k", "m", "two", 2, 2)
+        assert storage.get_cached_response("k") == ("two", 2, 2)
+        assert storage.cache_size() == 1
+
+
+class TestMetrics:
+    def test_metrics_reflect_run_state(self, db_path: str, dataset_file) -> None:
+        storage = Storage(db_path)
+        result = run_result(str(dataset_file))
+        storage.create_run(result.run_id, "test", "sim", str(dataset_file), {})
+        storage.complete_run(result)
+        storage.create_run("failed-1", "t", "sim", "d.jsonl", {})
+        storage.fail_run("failed-1", "boom")
+
+        metrics = storage.metrics()
+        assert metrics["runs_total"] == 2.0
+        assert metrics["runs_completed"] == 1.0
+        assert metrics["runs_failed"] == 1.0
+        assert metrics["items_evaluated_total"] == 6.0
+        assert metrics["response_cache_size"] == 0.0
+
+    def test_metrics_on_empty_db(self, db_path: str) -> None:
+        metrics = Storage(db_path).metrics()
+        assert metrics["runs_total"] == 0.0
+        assert metrics["items_evaluated_total"] == 0.0

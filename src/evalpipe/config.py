@@ -185,6 +185,11 @@ class EvalConfig(BaseModel):
     concurrency: int = Field(default=8, ge=1, le=64)
     retries: int = Field(default=2, ge=0, le=10)
     retry_backoff_s: float = Field(default=0.5, ge=0.0)
+    cache_responses: bool = Field(
+        default=False,
+        description="Memoise model outputs by (model, prompt) so metric-only re-runs "
+        "skip inference. Only sound for deterministic decoding (temperature 0).",
+    )
 
     @field_validator("prompt_template")
     @classmethod

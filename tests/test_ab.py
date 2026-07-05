@@ -108,3 +108,20 @@ def test_pairing_is_by_item_id_not_position() -> None:
     report = compare(baseline, candidate)
     assert report.pass_rate_test.diff == 0.0
     assert report.score_test.diff == 0.0
+
+
+def test_regression_diff_identifies_flipped_items() -> None:
+    baseline = outcomes([True, True, True, True, False, False])
+    candidate = outcomes([True, False, False, False, True, True])
+    report = compare(baseline, candidate)
+    assert report.n_regressions == 3
+    assert report.regressed_ids == ["item-0001", "item-0002", "item-0003"]
+    assert report.n_improvements == 2
+    assert report.improved_ids == ["item-0004", "item-0005"]
+
+
+def test_no_flips_when_outcomes_identical() -> None:
+    flags = [True, False, True, False]
+    report = compare(outcomes(flags), outcomes(flags))
+    assert report.n_regressions == 0
+    assert report.n_improvements == 0

@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import csv
+import io
+import json
 import math
 import time
 import uuid
@@ -17,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -26,7 +29,9 @@ from evalpipe.config import EvalConfig
 from evalpipe.datasets import load_dataset
 from evalpipe.evaluators import build_evaluators
 from evalpipe.exceptions import EvalPipeError, ProviderError, StorageError
+from evalpipe.pipeline import build_run_provider
 from evalpipe.providers import build_provider
+from evalpipe.runner import ItemResult
 from evalpipe.server.schemas import (
     HealthResponse,
     PlaygroundRequest,
@@ -58,6 +63,10 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
     async def health() -> HealthResponse:
         return HealthResponse(status="ok", version=__version__)
 
+    @app.get("/metrics", response_class=PlainTextResponse, include_in_schema=False)
+    async def metrics() -> str:
+        return _prometheus_exposition(storage.metrics())
+
     @app.get("/api/runs")
     async def list_runs(
         limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0)
@@ -79,6 +88,25 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
         _run_or_404(storage, run_id)
         results = storage.get_results(run_id, passed=passed, limit=limit, offset=offset)
         return {"run_id": run_id, "results": [asdict(result) for result in results]}
+
+    @app.get("/api/runs/{run_id}/export", include_in_schema=True)
+    async def export_results(
+        run_id: str, format: str = Query("csv", pattern="^(csv|json)$")
+    ) -> Response:
+        record = _run_or_404(storage, run_id)
+        results = storage.get_results(run_id, limit=1000)
+        if format == "json":
+            payload = {"run": asdict(record), "results": [asdict(r) for r in results]}
+            return Response(
+                content=json.dumps(payload, indent=2),
+                media_type="application/json",
+                headers={"Content-Disposition": f'attachment; filename="{run_id}.json"'},
+            )
+        return Response(
+            content=_results_to_csv(results),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'},
+        )
 
     @app.post("/api/runs", response_model=RunCreatedResponse, status_code=202)
     async def create_run(config: EvalConfig) -> RunCreatedResponse:
@@ -245,7 +273,7 @@ async def _execute_prepared(config: EvalConfig, storage: Storage, run_id: str) -
 async def _run_without_recreating(config: EvalConfig, storage: Storage, run_id: str) -> None:
     from evalpipe.runner import run_evaluation
 
-    provider = build_provider(config.provider)
+    provider = build_run_provider(config, storage)
     try:
         items = load_dataset(config.dataset)
         evaluators = build_evaluators(config.evaluators, provider)
@@ -278,6 +306,54 @@ def _build_ab_report(storage: Storage, baseline: str, candidate: str, alpha: flo
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+_CSV_COLUMNS = (
+    "item_id",
+    "passed",
+    "mean_score",
+    "latency_ms",
+    "cost_usd",
+    "attempts",
+    "error",
+    "prompt",
+    "expected",
+    "output",
+    "scores",
+)
+
+
+def _results_to_csv(results: list[ItemResult]) -> str:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(_CSV_COLUMNS)
+    for r in results:
+        writer.writerow(
+            [
+                r.item_id,
+                int(r.passed),
+                f"{r.mean_score:.6f}",
+                f"{r.latency_ms:.3f}",
+                f"{r.cost_usd:.6f}",
+                r.attempts,
+                r.error or "",
+                r.prompt,
+                r.expected or "",
+                r.output,
+                json.dumps([asdict(s) for s in r.scores]),
+            ]
+        )
+    return buffer.getvalue()
+
+
+def _prometheus_exposition(metrics: dict[str, float]) -> str:
+    """Render aggregate metrics in the Prometheus text exposition format."""
+    lines: list[str] = []
+    for name, value in metrics.items():
+        metric = f"evalpipe_{name}"
+        lines.append(f"# TYPE {metric} gauge")
+        lines.append(f"{metric} {value:g}")
+    return "\n".join(lines) + "\n"
 
 
 def _histogram(scores: list[float], bins: int) -> list[dict[str, Any]]:

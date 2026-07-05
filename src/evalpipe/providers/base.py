@@ -8,13 +8,20 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ModelResponse:
-    """One completion from a provider."""
+    """One completion from a provider.
+
+    ``cached`` marks a response served from the response cache rather than a
+    fresh inference call — such a response is billed at zero cost.
+    """
 
     text: str
     input_tokens: int = 0
     output_tokens: int = 0
+    cached: bool = False
 
     def cost_usd(self, input_cost_per_1k: float, output_cost_per_1k: float) -> float:
+        if self.cached:
+            return 0.0
         return (
             self.input_tokens / 1000.0 * input_cost_per_1k
             + self.output_tokens / 1000.0 * output_cost_per_1k

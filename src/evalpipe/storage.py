@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS prompts (
     created_at TEXT NOT NULL,
     PRIMARY KEY (name, version)
 );
+
+CREATE TABLE IF NOT EXISTS response_cache (
+    key           TEXT PRIMARY KEY,
+    model         TEXT NOT NULL,
+    output        TEXT NOT NULL,
+    input_tokens  INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    created_at    TEXT NOT NULL
+);
 """
 
 
@@ -308,6 +317,60 @@ class Storage:
             )
             for row in rows
         ]
+
+    # ---------------------------------------------------------------- response cache
+
+    def get_cached_response(self, key: str) -> tuple[str, int, int] | None:
+        """Return ``(output, input_tokens, output_tokens)`` for a cache key, or None."""
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT output, input_tokens, output_tokens FROM response_cache WHERE key = ?",
+                (key,),
+            ).fetchone()
+        if row is None:
+            return None
+        return (row["output"], row["input_tokens"], row["output_tokens"])
+
+    def put_cached_response(
+        self, key: str, model: str, output: str, input_tokens: int, output_tokens: int
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO response_cache"
+                " (key, model, output, input_tokens, output_tokens, created_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (key, model, output, input_tokens, output_tokens, _now()),
+            )
+
+    def cache_size(self) -> int:
+        with self._connect() as conn:
+            return int(conn.execute("SELECT COUNT(*) AS n FROM response_cache").fetchone()["n"])
+
+    # ------------------------------------------------------------------------ metrics
+
+    def metrics(self) -> dict[str, float]:
+        """Aggregate counters for the Prometheus exposition endpoint."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT status, COUNT(*) AS n, COALESCE(SUM(item_count), 0) AS items,"
+                " COALESCE(SUM(total_cost_usd), 0) AS cost FROM runs GROUP BY status"
+            ).fetchall()
+            prompts = conn.execute("SELECT COUNT(*) AS n FROM prompts").fetchone()["n"]
+            cache = conn.execute("SELECT COUNT(*) AS n FROM response_cache").fetchone()["n"]
+        by_status = {row["status"]: row for row in rows}
+        completed = by_status.get("completed")
+        return {
+            "runs_total": float(sum(row["n"] for row in rows)),
+            "runs_completed": float(by_status["completed"]["n"])
+            if "completed" in by_status
+            else 0.0,
+            "runs_failed": float(by_status["failed"]["n"]) if "failed" in by_status else 0.0,
+            "runs_running": float(by_status["running"]["n"]) if "running" in by_status else 0.0,
+            "items_evaluated_total": float(completed["items"]) if completed else 0.0,
+            "estimated_cost_usd_total": float(completed["cost"]) if completed else 0.0,
+            "prompts_total": float(prompts),
+            "response_cache_size": float(cache),
+        }
 
 
 def _now() -> str:

@@ -140,5 +140,24 @@
     </div>
   </div>
 </div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Item-level changes</h2>
+  <p class="card-note">Which specific items flipped outcome between the runs — the regressions an aggregate pass rate hides.</p>
+  <div class="grid cols-2">
+    <div>
+      <p style="margin:0 0 4px"><span class="chip fail">{{ report.n_regressions }} regressed</span> <span class="text-muted">pass → fail</span></p>
+      {% if report.regressed_ids %}
+      <div class="id-list">{% for item_id in report.regressed_ids %}<code>{{ item_id }}</code>{% endfor %}</div>
+      {% else %}<p class="text-muted" style="margin:6px 0 0">No items regressed.</p>{% endif %}
+    </div>
+    <div>
+      <p style="margin:0 0 4px"><span class="chip pass">{{ report.n_improvements }} improved</span> <span class="text-muted">fail → pass</span></p>
+      {% if report.improved_ids %}
+      <div class="id-list">{% for item_id in report.improved_ids %}<code>{{ item_id }}</code>{% endfor %}</div>
+      {% else %}<p class="text-muted" style="margin:6px 0 0">No items improved.</p>{% endif %}
+    </div>
+  </div>
+</div>
 {% endif %}
 {% endblock %}

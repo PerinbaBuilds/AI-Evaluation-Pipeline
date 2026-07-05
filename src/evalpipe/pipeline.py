@@ -8,12 +8,22 @@ from __future__ import annotations
 
 import uuid
 
+from evalpipe.cache import CachedProvider
 from evalpipe.config import EvalConfig
 from evalpipe.datasets import load_dataset
 from evalpipe.evaluators import build_evaluators
 from evalpipe.providers import build_provider
+from evalpipe.providers.base import ModelProvider
 from evalpipe.runner import ProgressCallback, RunResult, run_evaluation
 from evalpipe.storage import Storage
+
+
+def build_run_provider(config: EvalConfig, storage: Storage) -> ModelProvider:
+    """Build the generation provider, wrapping it in the response cache when enabled."""
+    provider = build_provider(config.provider)
+    if config.cache_responses:
+        return CachedProvider(provider, storage)
+    return provider
 
 
 async def execute_run(
@@ -30,7 +40,7 @@ async def execute_run(
     failure after that point marks the stored run as failed.
     """
     items = load_dataset(config.dataset)
-    provider = build_provider(config.provider)
+    provider = build_run_provider(config, storage)
     evaluators = build_evaluators(config.evaluators, provider)
 
     run_id = run_id or uuid.uuid4().hex

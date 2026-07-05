@@ -13,6 +13,7 @@ from evalpipe.config import (
     MockProviderConfig,
     OpenAICompatibleProviderConfig,
     RegexConfig,
+    TokenF1Config,
     load_config,
 )
 from evalpipe.exceptions import ConfigError
@@ -122,3 +123,12 @@ def test_extra_keys_rejected(tmp_path: Path) -> None:
     path.write_text(VALID_YAML + "\ntypo_key: true\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="typo_key"):
         load_config(path)
+
+
+def test_cache_responses_defaults_off_and_is_settable() -> None:
+    default = EvalConfig(
+        name="x", dataset="d.jsonl", provider=MockProviderConfig(), evaluators=[TokenF1Config()]
+    )
+    assert default.cache_responses is False
+    cached = default.model_copy(update={"cache_responses": True})
+    assert cached.cache_responses is True

@@ -76,6 +76,50 @@ class TestApi:
         )
         assert response.status_code == 404
 
+    def test_compare_includes_regression_diff(
+        self, client: TestClient, seeded: dict[str, str]
+    ) -> None:
+        body = client.get(
+            "/api/compare",
+            params={"baseline": seeded["baseline"], "candidate": seeded["candidate"]},
+        ).json()
+        # weak baseline (quality 0.3) -> strong candidate (quality 1.0): net improvements
+        assert body["n_improvements"] >= body["n_regressions"]
+        assert isinstance(body["regressed_ids"], list)
+        assert isinstance(body["improved_ids"], list)
+
+    def test_metrics_endpoint_prometheus_format(self, client: TestClient) -> None:
+        response = client.get("/metrics")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/plain")
+        body = response.text
+        assert "evalpipe_runs_total" in body
+        assert "evalpipe_runs_completed 2" in body
+        assert "# TYPE evalpipe_runs_total gauge" in body
+
+    def test_export_csv(self, client: TestClient, seeded: dict[str, str]) -> None:
+        response = client.get(f"/api/runs/{seeded['candidate']}/export", params={"format": "csv"})
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/csv")
+        assert "attachment" in response.headers["content-disposition"]
+        lines = response.text.strip().splitlines()
+        assert lines[0].startswith("item_id,passed,mean_score")
+        assert len(lines) == 7  # header + 6 items
+
+    def test_export_json(self, client: TestClient, seeded: dict[str, str]) -> None:
+        response = client.get(f"/api/runs/{seeded['candidate']}/export", params={"format": "json"})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["run"]["status"] == "completed"
+        assert len(body["results"]) == 6
+
+    def test_export_bad_format_is_422(self, client: TestClient, seeded: dict[str, str]) -> None:
+        response = client.get(f"/api/runs/{seeded['candidate']}/export", params={"format": "xml"})
+        assert response.status_code == 422
+
+    def test_export_unknown_run_is_404(self, client: TestClient) -> None:
+        assert client.get("/api/runs/ghost/export").status_code == 404
+
     def test_create_run_executes_in_background(self, client: TestClient, dataset_file) -> None:
         config = make_config(str(dataset_file), name="via-api").model_dump()
         response = client.post("/api/runs", json=config)
