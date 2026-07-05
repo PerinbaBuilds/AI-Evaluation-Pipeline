@@ -29,4 +29,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"
 
-CMD ["evalpipe", "serve", "--host", "0.0.0.0", "--port", "8000"]
+# Bind $PORT when a platform (Render, Cloud Run, ...) provides one; default to 8000.
+CMD ["sh", "-c", "evalpipe serve --host 0.0.0.0 --port ${PORT:-8000}"]

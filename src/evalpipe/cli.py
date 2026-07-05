@@ -185,13 +185,29 @@ def serve(
     host: str = typer.Option("127.0.0.1", "--host"),
     port: int = typer.Option(8000, "--port", min=1, max=65535),
     db: str | None = typer.Option(None, "--db"),
+    seed_demo: bool = typer.Option(
+        False,
+        "--seed-demo/--no-seed-demo",
+        envvar="EVALPIPE_SEED_DEMO",
+        help="Seed the offline demo history on startup if the database is empty "
+        "(useful for a fresh cloud deployment so the dashboard shows data).",
+    ),
 ) -> None:
     """Serve the REST API and reporting dashboard."""
     import uvicorn
 
+    from evalpipe.demo import seed_demo as seed_demo_history
     from evalpipe.server.app import create_app
 
-    uvicorn.run(create_app(_db_path(db)), host=host, port=port, log_level="info")
+    resolved_db = _db_path(db)
+    if seed_demo:
+        storage = Storage(resolved_db)
+        if storage.count_runs() == 0:
+            dataset_path = str(Path(resolved_db).resolve().parent / "demo_dataset.jsonl")
+            typer.echo("Seeding demo history on first start...")
+            asyncio.run(seed_demo_history(storage, dataset_path))
+
+    uvicorn.run(create_app(resolved_db), host=host, port=port, log_level="info")
 
 
 prompt_app = typer.Typer(help="Manage versioned prompt templates.", no_args_is_help=True)

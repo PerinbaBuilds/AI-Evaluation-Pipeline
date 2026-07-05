@@ -1,0 +1,19 @@
+# Render blueprint — deploy EvalPipe as a free Docker web service.
+#
+# One-click: https://render.com/deploy?repo=https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline
+# Render reads this file, builds the Dockerfile, and gives the service a public
+# HTTPS URL. EVALPIPE_SEED_DEMO makes the first boot seed the offline demo
+# history so the dashboard shows data immediately.
+services:
+  - type: web
+    name: evalpipe
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: EVALPIPE_DB
+        value: /home/evalpipe/evalpipe.db
+      - key: EVALPIPE_SEED_DEMO
+        value: "1"

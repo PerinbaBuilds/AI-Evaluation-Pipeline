@@ -115,6 +115,14 @@ docker compose up --build
 docker compose exec evalpipe evalpipe demo --db /data/evalpipe.db
 ```
 
+### One-click cloud deploy
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline)
+
+Render reads [`render.yaml`](render.yaml), builds the Docker image, and serves it
+at a public HTTPS URL. `EVALPIPE_SEED_DEMO=1` seeds the offline demo history on
+first boot, so the dashboard has data the moment the link opens.
+
 ## Running an evaluation
 
 An evaluation run is described declaratively:
