@@ -200,6 +200,35 @@ class TestResponseCache:
         assert storage.cache_size() == 1
 
 
+class TestMigration:
+    def test_metadata_column_backfilled_on_old_database(self, db_path: str) -> None:
+        import sqlite3
+
+        # Simulate a database created before the metadata column existed.
+        conn = sqlite3.connect(db_path)
+        conn.executescript(
+            "CREATE TABLE runs (id TEXT PRIMARY KEY);"
+            "CREATE TABLE results ("
+            " run_id TEXT, item_id TEXT, prompt TEXT, expected TEXT, output TEXT,"
+            " passed INTEGER, mean_score REAL, scores TEXT, latency_ms REAL,"
+            " cost_usd REAL, attempts INTEGER, error TEXT,"
+            " PRIMARY KEY (run_id, item_id));"
+        )
+        conn.commit()
+        conn.close()
+
+        Storage(db_path)  # opening runs the migration
+
+        conn = sqlite3.connect(db_path)
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(results)")}
+        conn.close()
+        assert "metadata" in columns
+
+    def test_migration_is_idempotent(self, db_path: str) -> None:
+        Storage(db_path)
+        Storage(db_path)  # second open must not fail on an already-migrated db
+
+
 class TestMetrics:
     def test_metrics_reflect_run_state(self, db_path: str, dataset_file) -> None:
         storage = Storage(db_path)

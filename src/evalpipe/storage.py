@@ -115,6 +115,7 @@ class Storage:
             self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
+            _migrate(conn)
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -373,6 +374,17 @@ class Storage:
             "prompts_total": float(prompts),
             "response_cache_size": float(cache),
         }
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Idempotent additive migrations for databases created by older versions.
+
+    ``CREATE TABLE IF NOT EXISTS`` never alters an existing table, so a column
+    added after a database was first created must be back-filled here.
+    """
+    result_columns = {row["name"] for row in conn.execute("PRAGMA table_info(results)")}
+    if "metadata" not in result_columns:
+        conn.execute("ALTER TABLE results ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'")
 
 
 def _now() -> str:
