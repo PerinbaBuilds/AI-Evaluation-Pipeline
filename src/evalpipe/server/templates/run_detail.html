@@ -93,6 +93,52 @@
   </div>
 </div>
 
+{% if slice_keys %}
+<div class="card chart-card" style="margin-top:16px">
+  <div class="filter-row" style="margin:0 0 6px">
+    <div>
+      <h2>Subgroup analysis</h2>
+      <p class="card-note" style="margin:2px 0 0">Pass rate by <strong>{{ active_slice }}</strong> — where the model is strong or weak, not just the average.</p>
+    </div>
+    <nav class="segmented" aria-label="Slice by metadata field">
+      {% for key in slice_keys %}
+      <a href="/runs/{{ run.id }}?slice={{ key }}" {% if key == active_slice %}aria-current="true"{% endif %}>{{ key }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+  <div class="chart" data-chart="hbar">
+    <script type="application/json">{{ slice_chart | tojson }}</script>
+  </div>
+  <details class="chart-data" open>
+    <summary>View data table</summary>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th scope="col">{{ active_slice | capitalize }}</th>
+            <th scope="col" class="num">Items</th>
+            <th scope="col" class="num">Pass rate</th>
+            <th scope="col" class="num">95% CI</th>
+            <th scope="col" class="num">Mean score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in slice_stats %}
+          <tr>
+            <td>{{ s.value }}</td>
+            <td class="num">{{ s.n }}</td>
+            <td class="num">{{ '%.1f' % (s.pass_rate * 100) }}%</td>
+            <td class="num">{{ '%.1f' % (s.pass_ci[0] * 100) }}–{{ '%.1f' % (s.pass_ci[1] * 100) }}%</td>
+            <td class="num">{{ '%.3f' % s.mean_score }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</div>
+{% endif %}
+
 <div class="filter-row">
   <h2 style="font-size:16px;margin:0">Item results</h2>
   <nav class="segmented" aria-label="Filter results by outcome">

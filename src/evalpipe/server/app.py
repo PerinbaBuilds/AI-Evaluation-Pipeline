@@ -24,7 +24,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from evalpipe import __version__, ab
+from evalpipe import __version__, ab, slices
 from evalpipe.config import EvalConfig
 from evalpipe.datasets import load_dataset
 from evalpipe.evaluators import build_evaluators
@@ -107,6 +107,20 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
             media_type="text/csv",
             headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'},
         )
+
+    @app.get("/api/runs/{run_id}/slices")
+    async def get_slices(run_id: str, key: str = Query("")) -> dict[str, Any]:
+        _run_or_404(storage, run_id)
+        results = storage.get_results(run_id, limit=1000)
+        keys = slices.sliceable_keys(results)
+        active = key if key in keys else (keys[0] if keys else "")
+        stats = slices.slice_by(results, active) if active else []
+        return {
+            "run_id": run_id,
+            "keys": keys,
+            "key": active,
+            "slices": [asdict(stat) for stat in stats],
+        }
 
     @app.post("/api/runs", response_model=RunCreatedResponse, status_code=202)
     async def create_run(config: EvalConfig) -> RunCreatedResponse:
@@ -207,7 +221,12 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
         return templates.TemplateResponse(request, "dashboard.html", context)
 
     @app.get("/runs/{run_id}", response_class=HTMLResponse, include_in_schema=False)
-    async def run_page(request: Request, run_id: str, outcome: str = Query("all")) -> HTMLResponse:
+    async def run_page(
+        request: Request,
+        run_id: str,
+        outcome: str = Query("all"),
+        slice_key: str = Query("", alias="slice"),
+    ) -> HTMLResponse:
         record = _run_or_404(storage, run_id)
         passed_filter = {"passed": True, "failed": False}.get(outcome)
         results = storage.get_results(run_id, passed=passed_filter, limit=500)
@@ -219,6 +238,11 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
             if all_results
             else (0.0, 0.0)
         )
+
+        keys = slices.sliceable_keys(all_results)
+        active_key = slice_key if slice_key in keys else (keys[0] if keys else "")
+        slice_stats = slices.slice_by(all_results, active_key) if active_key else []
+
         context = {
             "request": request,
             "run": record,
@@ -230,6 +254,14 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
                 {"label": name, "value": round(value, 4)}
                 for name, value in record.evaluator_means.items()
             ],
+            "slice_keys": keys,
+            "active_slice": active_key,
+            "slice_stats": slice_stats,
+            "slice_chart": {
+                "bars": [{"label": s.value, "value": round(s.pass_rate, 4)} for s in slice_stats],
+                "format": "percent",
+                "max": 1,
+            },
         }
         return templates.TemplateResponse(request, "run_detail.html", context)
 

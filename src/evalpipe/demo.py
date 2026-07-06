@@ -346,8 +346,77 @@ def demo_config(dataset_path: str, name: str, model: str, quality: float, seed: 
     )
 
 
+# Content-matched slice labels so subgroup analysis has meaningful groups.
+_DEMO_TOPICS: dict[str, str] = {
+    "qa-001": "geography",
+    "qa-002": "science",
+    "qa-003": "literature",
+    "qa-004": "science",
+    "qa-005": "geography",
+    "qa-006": "geography",
+    "qa-007": "science",
+    "qa-008": "science",
+    "qa-009": "geography",
+    "qa-010": "math",
+    "qa-011": "art",
+    "qa-012": "geography",
+    "qa-013": "math",
+    "qa-014": "science",
+    "qa-015": "science",
+    "qa-016": "geography",
+    "qa-017": "science",
+    "qa-018": "geography",
+    "qa-019": "math",
+    "qa-020": "geography",
+    "qa-021": "science",
+    "qa-022": "math",
+    "qa-023": "history",
+    "qa-024": "geography",
+    "qa-025": "science",
+    "qa-026": "literature",
+    "qa-027": "science",
+    "qa-028": "science",
+    "qa-029": "geography",
+    "qa-030": "science",
+    "qa-031": "science",
+    "qa-032": "sports",
+    "qa-033": "science",
+    "qa-034": "geography",
+    "qa-035": "science",
+    "qa-036": "history",
+    "qa-037": "science",
+    "qa-038": "science",
+    "qa-039": "science",
+    "qa-040": "math",
+}
+_DEMO_DIFFICULTY: dict[str, str] = {
+    "qa-007": "medium",
+    "qa-008": "medium",
+    "qa-010": "medium",
+    "qa-012": "medium",
+    "qa-014": "medium",
+    "qa-015": "medium",
+    "qa-017": "medium",
+    "qa-023": "medium",
+    "qa-025": "medium",
+    "qa-026": "medium",
+    "qa-029": "medium",
+    "qa-030": "medium",
+    "qa-031": "medium",
+    "qa-034": "medium",
+    "qa-035": "medium",
+    "qa-038": "medium",
+    "qa-040": "medium",
+    "qa-028": "hard",
+}
+
+
 def write_demo_dataset(path: str) -> None:
-    """Materialise the built-in demo items as a JSONL dataset file."""
+    """Materialise the built-in demo items as a JSONL dataset file.
+
+    Each item is tagged with ``topic`` and ``difficulty`` metadata so the
+    subgroup (slice) analysis view has meaningful groups to break down.
+    """
     import json
     from pathlib import Path
 
@@ -355,7 +424,15 @@ def write_demo_dataset(path: str) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("w", encoding="utf-8") as handle:
         for item in DEMO_ITEMS:
-            handle.write(json.dumps(item) + "\n")
+            enriched = dict(item)
+            raw_metadata = enriched.get("metadata", {})
+            metadata: dict[str, str] = {}
+            if isinstance(raw_metadata, dict):
+                metadata.update({str(k): str(v) for k, v in raw_metadata.items()})
+            metadata["topic"] = _DEMO_TOPICS.get(str(item["id"]), "general")
+            metadata["difficulty"] = _DEMO_DIFFICULTY.get(str(item["id"]), "easy")
+            enriched["metadata"] = metadata
+            handle.write(json.dumps(enriched) + "\n")
 
 
 async def seed_demo(storage: Storage, dataset_path: str) -> list[str]:

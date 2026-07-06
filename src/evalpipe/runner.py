@@ -37,6 +37,7 @@ class ItemResult:
     cost_usd: float
     attempts: int
     error: str | None = None
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -174,6 +175,7 @@ async def _process_item(
             cost_usd=0.0,
             attempts=attempts,
             error=f"provider failed after {attempts} attempt(s): {last_error}",
+            metadata=dict(item.metadata),
         )
 
     scores: list[EvalScore] = []
@@ -201,4 +203,5 @@ async def _process_item(
         latency_ms=latency_ms,
         cost_usd=provider.estimate_cost_usd(response),
         attempts=attempts,
+        metadata=dict(item.metadata),
     )

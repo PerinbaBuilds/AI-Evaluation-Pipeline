@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS results (
     cost_usd   REAL NOT NULL,
     attempts   INTEGER NOT NULL,
     error      TEXT,
+    metadata   TEXT NOT NULL DEFAULT '{}',
     PRIMARY KEY (run_id, item_id)
 );
 
@@ -160,6 +161,7 @@ class Storage:
                 item.cost_usd,
                 item.attempts,
                 item.error,
+                json.dumps(item.metadata),
             )
             for item in run.items
         ]
@@ -185,8 +187,8 @@ class Storage:
                 raise StorageError(f"run {run.run_id!r} does not exist")
             conn.executemany(
                 "INSERT INTO results (run_id, item_id, prompt, expected, output, passed,"
-                " mean_score, scores, latency_ms, cost_usd, attempts, error)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " mean_score, scores, latency_ms, cost_usd, attempts, error, metadata)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 rows,
             )
 
@@ -412,4 +414,5 @@ def _item_result(row: sqlite3.Row) -> ItemResult:
         cost_usd=row["cost_usd"],
         attempts=row["attempts"],
         error=row["error"],
+        metadata=json.loads(row["metadata"]),
     )

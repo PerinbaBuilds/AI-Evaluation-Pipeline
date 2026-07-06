@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 
 import pytest
@@ -119,6 +120,36 @@ class TestApi:
 
     def test_export_unknown_run_is_404(self, client: TestClient) -> None:
         assert client.get("/api/runs/ghost/export").status_code == 404
+
+    def test_slices_unknown_run_is_404(self, client: TestClient) -> None:
+        assert client.get("/api/runs/ghost/slices").status_code == 404
+
+
+def test_slices_endpoint_groups_by_metadata(tmp_path) -> None:
+    dataset = tmp_path / "d.jsonl"
+    rows = [
+        json.dumps(
+            {
+                "id": f"i{n}",
+                "prompt": f"q{n}",
+                "expected": f"a{n}",
+                "metadata": {"topic": "easy" if n < 5 else "hard"},
+            }
+        )
+        for n in range(10)
+    ]
+    dataset.write_text("\n".join(rows), encoding="utf-8")
+
+    db = str(tmp_path / "s.db")
+    config = make_config(str(dataset), quality=1.0)
+    run = asyncio.run(execute_run(config, Storage(db)))
+
+    with TestClient(create_app(db)) as client:
+        body = client.get(f"/api/runs/{run.run_id}/slices").json()
+        assert "topic" in body["keys"]
+        assert body["key"] == "topic"
+        assert {s["value"] for s in body["slices"]} == {"easy", "hard"}
+        assert all("pass_rate" in s and "pass_ci" in s for s in body["slices"])
 
     def test_create_run_executes_in_background(self, client: TestClient, dataset_file) -> None:
         config = make_config(str(dataset_file), name="via-api").model_dump()

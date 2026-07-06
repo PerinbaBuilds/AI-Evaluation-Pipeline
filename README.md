@@ -38,6 +38,9 @@ baseline, or is the difference just noise?"*
   small samples produce explicit *underpowered* warnings instead of false confidence.
 - **Item-level regression diff** — the A/B view names exactly which items flipped
   pass→fail (regressions) vs fail→pass (improvements), the failures an aggregate hides.
+- **Subgroup (slice) analysis** — break a run's pass rate down by a dataset metadata
+  field (topic, difficulty, language, …) with per-group Wilson intervals, so a 50%
+  overall resolves into "95% on easy, 20% on hard" and you see *where* the model is weak.
 - **Response cache** — opt-in memoisation of model outputs by `(model, prompt)`, so you
   can iterate on metrics and thresholds and re-score for free without re-running inference.
 - **Export & observability** — download any run's results as CSV/JSON, and scrape
@@ -219,6 +222,7 @@ Interactive OpenAPI docs at `/docs` when serving. Highlights:
 | `GET /api/runs` · `GET /api/runs/{id}` | run history and summaries |
 | `GET /api/runs/{id}/results` | per-item results, filterable by outcome |
 | `GET /api/runs/{id}/export?format=csv\|json` | download a run's results |
+| `GET /api/runs/{id}/slices?key=<field>` | pass rate broken down by a metadata field |
 | `POST /api/runs` | launch an evaluation (validated up front, executed in background) |
 | `GET /api/compare?baseline=&candidate=` | full statistical comparison + regression diff |
 | `POST /api/playground` | one prompt against up to four providers, side by side |
