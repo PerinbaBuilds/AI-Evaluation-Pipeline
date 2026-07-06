@@ -211,3 +211,150 @@ class TestBuildProvider:
 
         response = ModelResponse(text="x", input_tokens=500, output_tokens=250)
         assert provider.estimate_cost_usd(response) == pytest.approx(0.5 + 0.5)
+
+
+class TestAnthropicProvider:
+    async def test_successful_completion(self) -> None:
+        from evalpipe.providers.anthropic import AnthropicProvider
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            assert request.url.path == "/v1/messages"
+            assert request.headers["x-api-key"] == "sk-ant"
+            assert request.headers["anthropic-version"] == "2023-06-01"
+            body = json.loads(request.content)
+            assert body["messages"] == [{"role": "user", "content": "Q?"}]
+            assert body["max_tokens"] == 512
+            return httpx.Response(
+                200,
+                json={
+                    "content": [{"type": "text", "text": "The answer."}],
+                    "usage": {"input_tokens": 9, "output_tokens": 4},
+                },
+            )
+
+        provider = AnthropicProvider(
+            model="test-model", api_key="sk-ant", transport=httpx.MockTransport(handler)
+        )
+        response = await provider.generate("Q?")
+        assert response.text == "The answer."
+        assert response.input_tokens == 9
+        assert response.output_tokens == 4
+        await provider.aclose()
+
+    async def test_concatenates_text_blocks(self) -> None:
+        from evalpipe.providers.anthropic import AnthropicProvider
+
+        transport = httpx.MockTransport(
+            lambda request: httpx.Response(
+                200,
+                json={"content": [{"type": "text", "text": "a"}, {"type": "text", "text": "b"}]},
+            )
+        )
+        provider = AnthropicProvider(model="m", api_key="k", transport=transport)
+        response = await provider.generate("Q?")
+        assert response.text == "ab"
+        await provider.aclose()
+
+    async def test_http_error(self) -> None:
+        from evalpipe.providers.anthropic import AnthropicProvider
+
+        transport = httpx.MockTransport(lambda request: httpx.Response(401, text="bad key"))
+        provider = AnthropicProvider(model="m", api_key="k", transport=transport)
+        with pytest.raises(ProviderError, match="HTTP 401"):
+            await provider.generate("Q?")
+        await provider.aclose()
+
+    async def test_malformed_body(self) -> None:
+        from evalpipe.providers.anthropic import AnthropicProvider
+
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"nope": 1}))
+        provider = AnthropicProvider(model="m", api_key="k", transport=transport)
+        with pytest.raises(ProviderError, match="malformed"):
+            await provider.generate("Q?")
+        await provider.aclose()
+
+
+class TestGeminiProvider:
+    async def test_successful_completion(self) -> None:
+        from evalpipe.providers.gemini import GeminiProvider
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            assert ":generateContent" in request.url.path
+            assert request.url.params["key"] == "g-key"
+            body = json.loads(request.content)
+            assert body["contents"][0]["parts"][0]["text"] == "Q?"
+            return httpx.Response(
+                200,
+                json={
+                    "candidates": [{"content": {"parts": [{"text": "The answer."}]}}],
+                    "usageMetadata": {"promptTokenCount": 5, "candidatesTokenCount": 2},
+                },
+            )
+
+        provider = GeminiProvider(
+            model="gemini-x", api_key="g-key", transport=httpx.MockTransport(handler)
+        )
+        response = await provider.generate("Q?")
+        assert response.text == "The answer."
+        assert response.input_tokens == 5
+        assert response.output_tokens == 2
+        await provider.aclose()
+
+    async def test_http_error(self) -> None:
+        from evalpipe.providers.gemini import GeminiProvider
+
+        transport = httpx.MockTransport(lambda request: httpx.Response(429, text="quota"))
+        provider = GeminiProvider(model="m", api_key="k", transport=transport)
+        with pytest.raises(ProviderError, match="HTTP 429"):
+            await provider.generate("Q?")
+        await provider.aclose()
+
+    async def test_malformed_body(self) -> None:
+        from evalpipe.providers.gemini import GeminiProvider
+
+        transport = httpx.MockTransport(
+            lambda request: httpx.Response(200, json={"candidates": []})
+        )
+        provider = GeminiProvider(model="m", api_key="k", transport=transport)
+        with pytest.raises(ProviderError, match="malformed"):
+            await provider.generate("Q?")
+        await provider.aclose()
+
+
+class TestBuildHostedProviders:
+    def test_openai_uses_env_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import OpenAIProviderConfig
+
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")
+        provider = build_provider(OpenAIProviderConfig(model="gpt-4o-mini"))
+        assert isinstance(provider, OpenAICompatibleProvider)
+
+    def test_openai_missing_key_fails(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import OpenAIProviderConfig
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        with pytest.raises(ConfigError, match="OPENAI_API_KEY"):
+            build_provider(OpenAIProviderConfig(model="gpt-4o-mini"))
+
+    def test_anthropic_builds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import AnthropicProviderConfig
+        from evalpipe.providers.anthropic import AnthropicProvider
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant")
+        provider = build_provider(AnthropicProviderConfig(model="some-model"))
+        assert isinstance(provider, AnthropicProvider)
+
+    def test_gemini_builds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import GeminiProviderConfig
+        from evalpipe.providers.gemini import GeminiProvider
+
+        monkeypatch.setenv("GEMINI_API_KEY", "g-key")
+        provider = build_provider(GeminiProviderConfig(model="gemini-1.5-flash"))
+        assert isinstance(provider, GeminiProvider)
+
+    def test_anthropic_missing_key_fails(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import AnthropicProviderConfig
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
+            build_provider(AnthropicProviderConfig(model="m"))

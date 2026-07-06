@@ -196,6 +196,54 @@ def test_slices_endpoint_groups_by_metadata(tmp_path) -> None:
         assert results[0]["output"] == "Paris."
         assert results[0]["latency_ms"] >= 0.0
 
+    def test_playground_scores_outputs_with_metrics(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/playground",
+            json={
+                "prompt": "Capital of France?",
+                "reference": "Paris.",
+                "providers": [
+                    {"type": "mock", "model": "sim-a", "quality": 1.0},
+                    {"type": "mock", "model": "sim-b", "quality": 0.0, "seed": 5},
+                ],
+                "evaluators": [
+                    {"type": "exact_match", "strip_punctuation": True},
+                    {"type": "token_f1"},
+                ],
+            },
+        )
+        assert response.status_code == 200
+        results = response.json()["results"]
+        assert len(results) == 2
+        for result in results:
+            assert len(result["scores"]) == 2
+            assert result["passed"] is not None
+            assert result["mean_score"] is not None
+        # quality 1.0 returns the reference verbatim -> exact match passes
+        assert results[0]["passed"] is True
+        assert results[0]["provider_type"] == "mock"
+
+    def test_playground_without_metrics_has_no_scores(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/playground",
+            json={
+                "prompt": "Q?",
+                "providers": [{"type": "mock", "model": "m", "quality": 1.0}],
+            },
+        )
+        result = response.json()["results"][0]
+        assert result["scores"] == []
+        assert result["passed"] is None
+
+    def test_integrations_status(self, client: TestClient, monkeypatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-x")
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        body = client.get("/api/integrations").json()
+        by_type = {p["type"]: p for p in body["providers"]}
+        assert by_type["openai"]["configured"] is True
+        assert by_type["anthropic"]["configured"] is False
+        assert by_type["mock"]["configured"] is True  # no key needed
+
     def test_playground_provider_error_is_isolated(self, client: TestClient) -> None:
         response = client.post(
             "/api/playground",
@@ -268,7 +316,8 @@ class TestPages:
     def test_playground_page(self, client: TestClient) -> None:
         response = client.get("/playground")
         assert response.status_code == 200
-        assert "Run side by side" in response.text
+        assert "Run comparison" in response.text
+        assert "Anthropic" in response.text  # integrations strip lists the providers
 
     def test_static_assets_served(self, client: TestClient) -> None:
         assert client.get("/static/styles.css").status_code == 200

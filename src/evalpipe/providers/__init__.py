@@ -1,26 +1,47 @@
 """Model providers.
 
 A provider turns a prompt into text. :func:`build_provider` maps a validated
-provider config onto a concrete implementation.
+provider config onto a concrete implementation. API keys are always resolved
+from environment variables at build time — never stored in configs or exposed.
 """
 
 from __future__ import annotations
 
 import os
 
-from evalpipe.config import MockProviderConfig, OpenAICompatibleProviderConfig, ProviderConfig
+from evalpipe.config import (
+    AnthropicProviderConfig,
+    GeminiProviderConfig,
+    MockProviderConfig,
+    OpenAICompatibleProviderConfig,
+    OpenAIProviderConfig,
+    ProviderConfig,
+)
 from evalpipe.exceptions import ConfigError
+from evalpipe.providers.anthropic import AnthropicProvider
 from evalpipe.providers.base import ModelProvider, ModelResponse
+from evalpipe.providers.gemini import GeminiProvider
 from evalpipe.providers.mock import MockProvider
 from evalpipe.providers.openai_compat import OpenAICompatibleProvider
 
 __all__ = [
+    "AnthropicProvider",
+    "GeminiProvider",
     "MockProvider",
     "ModelProvider",
     "ModelResponse",
     "OpenAICompatibleProvider",
     "build_provider",
 ]
+
+
+def _require_key(env_name: str) -> str:
+    key = os.environ.get(env_name)
+    if not key:
+        raise ConfigError(
+            f"environment variable {env_name!r} is not set (the provider needs it for its API key)"
+        )
+    return key
 
 
 def build_provider(config: ProviderConfig) -> ModelProvider:
@@ -38,16 +59,45 @@ def build_provider(config: ProviderConfig) -> ModelProvider:
     if isinstance(config, OpenAICompatibleProviderConfig):
         api_key: str | None = None
         if config.api_key_env:
-            api_key = os.environ.get(config.api_key_env)
-            if not api_key:
-                raise ConfigError(
-                    f"environment variable {config.api_key_env!r} is not set "
-                    "(the config references it for the provider API key)"
-                )
+            api_key = _require_key(config.api_key_env)
         return OpenAICompatibleProvider(
             base_url=config.base_url,
             model=config.model,
             api_key=api_key,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            timeout_s=config.timeout_s,
+            input_cost_per_1k_tokens=config.input_cost_per_1k_tokens,
+            output_cost_per_1k_tokens=config.output_cost_per_1k_tokens,
+        )
+    if isinstance(config, OpenAIProviderConfig):
+        return OpenAICompatibleProvider(
+            base_url=config.base_url,
+            model=config.model,
+            api_key=_require_key(config.api_key_env),
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            timeout_s=config.timeout_s,
+            input_cost_per_1k_tokens=config.input_cost_per_1k_tokens,
+            output_cost_per_1k_tokens=config.output_cost_per_1k_tokens,
+        )
+    if isinstance(config, AnthropicProviderConfig):
+        return AnthropicProvider(
+            model=config.model,
+            api_key=_require_key(config.api_key_env),
+            base_url=config.base_url,
+            api_version=config.api_version,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            timeout_s=config.timeout_s,
+            input_cost_per_1k_tokens=config.input_cost_per_1k_tokens,
+            output_cost_per_1k_tokens=config.output_cost_per_1k_tokens,
+        )
+    if isinstance(config, GeminiProviderConfig):
+        return GeminiProvider(
+            model=config.model,
+            api_key=_require_key(config.api_key_env),
+            base_url=config.base_url,
             temperature=config.temperature,
             max_tokens=config.max_tokens,
             timeout_s=config.timeout_s,

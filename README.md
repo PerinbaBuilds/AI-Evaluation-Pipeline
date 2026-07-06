@@ -49,8 +49,13 @@ baseline, or is the difference just noise?"*
   so the quality/latency/cost trade-off is visible on one screen.
 - **Prompt management** — versioned prompt templates stored alongside results, so every
   run records exactly which prompt produced it.
-- **Online playground** — side-by-side comparison of two providers on a single prompt
-  with output, latency and cost.
+- **First-class model integrations** — OpenAI (ChatGPT), Anthropic, and Google Gemini,
+  plus a generic OpenAI-compatible provider for local runtimes/proxies. API keys are
+  read from server-side environment variables — never stored in configs or sent to the
+  browser.
+- **Real-time comparison** — send one prompt to several models at once and see output,
+  latency and cost **and** live per-metric scores from the same evaluator suite the batch
+  pipeline uses. The playground shows which integrations are configured at a glance.
 - **CI/CD quality gate** — `evalpipe run config.yaml --min-pass-rate 0.85` exits non-zero
   when quality regresses, so evaluations gate deploys like tests do.
 - **Deterministic offline demo** — a simulation provider with controllable accuracy makes
@@ -200,6 +205,27 @@ The verdict is `candidate_better` / `baseline_better` / `inconclusive` at your �
 (default 0.05). Below 30 shared items the report warns that the tests are underpowered —
 and `evalpipe.stats.required_sample_size_two_proportions()` tells you how many items you
 need to detect a given lift.
+
+### Model providers
+
+| `type` | Talks to | API key env var |
+|---|---|---|
+| `mock` | Deterministic offline simulation | — |
+| `openai` | OpenAI Chat Completions (ChatGPT) | `OPENAI_API_KEY` |
+| `anthropic` | Anthropic Messages API | `ANTHROPIC_API_KEY` |
+| `gemini` | Google Gemini `generateContent` | `GEMINI_API_KEY` |
+| `openai_compatible` | Any OpenAI-style endpoint (vLLM, Ollama, proxies) | configurable |
+
+Set the relevant key in the environment before starting the server, then pick the
+provider (and enter a model id) in the **Playground**, or reference it in a run config.
+Keys are resolved server-side at call time and never leave the process.
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+export GEMINI_API_KEY=...
+evalpipe serve
+```
 
 ### Gating CI/CD on quality
 

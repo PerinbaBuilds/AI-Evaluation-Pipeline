@@ -9,27 +9,16 @@
 (function () {
   "use strict";
 
-  var DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-  var TOKENS = DARK
-    ? {
-        surface: "#16181b",
-        ink: "#ecebe8",
-        ink2: "#a7a49c",
-        muted: "#6f6d66",
-        grid: "#1f2226",
-        baseline: "#3a3e44",
-        series: ["#3987e5", "#199e70"],
-      }
-    : {
-        surface: "#ffffff",
-        ink: "#1b1a17",
-        ink2: "#57554e",
-        muted: "#8d8b81",
-        grid: "#eeece5",
-        baseline: "#ceccc2",
-        series: ["#2a78d6", "#1baf7a"],
-      };
+  /* Premium dark console — a single, dark-first theme. */
+  var TOKENS = {
+    surface: "#101216",
+    ink: "#eceef1",
+    ink2: "#9aa1ab",
+    muted: "#6a7079",
+    grid: "#20242b",
+    baseline: "#2f343c",
+    series: ["#3b82f6", "#10b981"],
+  };
 
   var SVG_NS = "http://www.w3.org/2000/svg";
 

@@ -63,8 +63,61 @@ class OpenAICompatibleProviderConfig(BaseModel):
         return value.rstrip("/")
 
 
+class OpenAIProviderConfig(BaseModel):
+    """OpenAI Chat Completions API (ChatGPT models)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["openai"] = "openai"
+    model: str = "gpt-4o-mini"
+    base_url: str = "https://api.openai.com/v1"
+    api_key_env: str = "OPENAI_API_KEY"
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=512, ge=1)
+    timeout_s: float = Field(default=60.0, gt=0.0)
+    input_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+    output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+
+
+class AnthropicProviderConfig(BaseModel):
+    """Anthropic Messages API."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["anthropic"] = "anthropic"
+    model: str
+    base_url: str = "https://api.anthropic.com"
+    api_key_env: str = "ANTHROPIC_API_KEY"
+    api_version: str = "2023-06-01"
+    temperature: float = Field(default=0.0, ge=0.0, le=1.0)
+    max_tokens: int = Field(default=512, ge=1)
+    timeout_s: float = Field(default=60.0, gt=0.0)
+    input_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+    output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+
+
+class GeminiProviderConfig(BaseModel):
+    """Google Gemini generateContent API."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["gemini"] = "gemini"
+    model: str = "gemini-1.5-flash"
+    base_url: str = "https://generativelanguage.googleapis.com"
+    api_key_env: str = "GEMINI_API_KEY"
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=512, ge=1)
+    timeout_s: float = Field(default=60.0, gt=0.0)
+    input_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+    output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+
+
 ProviderConfig = Annotated[
-    MockProviderConfig | OpenAICompatibleProviderConfig,
+    MockProviderConfig
+    | OpenAICompatibleProviderConfig
+    | OpenAIProviderConfig
+    | AnthropicProviderConfig
+    | GeminiProviderConfig,
     Field(discriminator="type"),
 ]
 

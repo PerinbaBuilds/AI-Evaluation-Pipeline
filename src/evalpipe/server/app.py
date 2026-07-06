@@ -13,6 +13,7 @@ import csv
 import io
 import json
 import math
+import os
 import time
 import uuid
 from dataclasses import asdict
@@ -26,7 +27,7 @@ from fastapi.templating import Jinja2Templates
 
 from evalpipe import __version__, ab, slices
 from evalpipe.config import EvalConfig
-from evalpipe.datasets import load_dataset
+from evalpipe.datasets import DatasetItem, load_dataset
 from evalpipe.evaluators import build_evaluators
 from evalpipe.exceptions import EvalPipeError, ProviderError, StorageError
 from evalpipe.pipeline import build_run_provider
@@ -37,6 +38,7 @@ from evalpipe.server.schemas import (
     PlaygroundRequest,
     PlaygroundResponse,
     PlaygroundResult,
+    PlaygroundScore,
     PromptSaveRequest,
     RunCreatedResponse,
 )
@@ -152,27 +154,59 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
 
     @app.post("/api/playground", response_model=PlaygroundResponse)
     async def playground(request: PlaygroundRequest) -> PlaygroundResponse:
+        item = DatasetItem(
+            id="playground", prompt=request.prompt, expected=request.reference or None
+        )
+
         async def invoke(provider_config: Any) -> PlaygroundResult:
+            ptype = getattr(provider_config, "type", "")
             try:
                 provider = build_provider(provider_config)
             except EvalPipeError as exc:
-                return PlaygroundResult(model=provider_config.model, error=str(exc))
+                return PlaygroundResult(
+                    model=provider_config.model, provider_type=ptype, error=str(exc)
+                )
             start = time.perf_counter()
             try:
                 response = await provider.generate(request.prompt, reference=request.reference)
             except ProviderError as exc:
-                return PlaygroundResult(model=provider.model, error=str(exc))
-            finally:
                 await provider.aclose()
+                return PlaygroundResult(model=provider.model, provider_type=ptype, error=str(exc))
+            latency_ms = (time.perf_counter() - start) * 1000.0
+            cost = provider.estimate_cost_usd(response)
+
+            scores: list[PlaygroundScore] = []
+            if request.evaluators:
+                evaluators = build_evaluators(request.evaluators, provider)
+                for evaluator in evaluators:
+                    verdict = await evaluator.evaluate(item, response.text)
+                    scores.append(
+                        PlaygroundScore(
+                            name=verdict.name,
+                            score=verdict.score,
+                            passed=verdict.passed,
+                            detail=verdict.detail,
+                        )
+                    )
+            await provider.aclose()
+
             return PlaygroundResult(
                 model=provider.model,
+                provider_type=ptype,
                 output=response.text,
-                latency_ms=(time.perf_counter() - start) * 1000.0,
-                cost_usd=provider.estimate_cost_usd(response),
+                latency_ms=latency_ms,
+                cost_usd=cost,
+                passed=all(s.passed for s in scores) if scores else None,
+                mean_score=(sum(s.score for s in scores) / len(scores)) if scores else None,
+                scores=scores,
             )
 
         results = await asyncio.gather(*(invoke(config) for config in request.providers))
         return PlaygroundResponse(results=list(results))
+
+    @app.get("/api/integrations")
+    async def integrations() -> dict[str, Any]:
+        return {"providers": _integration_status()}
 
     @app.get("/api/prompts")
     async def list_prompts() -> dict[str, Any]:
@@ -291,7 +325,9 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
 
     @app.get("/playground", response_class=HTMLResponse, include_in_schema=False)
     async def playground_page(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse(request, "playground.html", {})
+        return templates.TemplateResponse(
+            request, "playground.html", {"integrations": _integration_status()}
+        )
 
     return app
 
@@ -376,6 +412,24 @@ def _results_to_csv(results: list[ItemResult]) -> str:
             ]
         )
     return buffer.getvalue()
+
+
+_INTEGRATIONS = (
+    ("openai", "OpenAI · ChatGPT", "OPENAI_API_KEY"),
+    ("anthropic", "Anthropic", "ANTHROPIC_API_KEY"),
+    ("gemini", "Google Gemini", "GEMINI_API_KEY"),
+    ("openai_compatible", "OpenAI-compatible · local / proxy", None),
+    ("mock", "Simulation · offline", None),
+)
+
+
+def _integration_status() -> list[dict[str, Any]]:
+    """Which provider integrations are usable right now (env key present)."""
+    status = []
+    for ptype, label, env in _INTEGRATIONS:
+        configured = env is None or bool(os.environ.get(env))
+        status.append({"type": ptype, "label": label, "env": env, "configured": configured})
+    return status
 
 
 def _prometheus_exposition(metrics: dict[str, float]) -> str:
