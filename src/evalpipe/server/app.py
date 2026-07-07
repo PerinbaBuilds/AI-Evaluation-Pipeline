@@ -243,6 +243,7 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
             "total_runs": storage.count_runs(),
             "total_items": sum(record.item_count for record in completed),
             "total_cost": sum(record.total_cost_usd for record in completed),
+            "integrations": _integration_status(),
             "trend": [
                 {
                     "label": f"{record.name} · {record.model}",

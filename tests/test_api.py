@@ -280,6 +280,16 @@ class TestPages:
         assert response.status_code == 200
         assert "Evaluation dashboard" in response.text
         assert "Pass rate over runs" in response.text
+        # the real-time comparison widget is embedded on the dashboard itself
+        assert "Compare models in real time" in response.text
+        assert 'id="pg-form"' in response.text
+
+    def test_dashboard_comparison_available_when_empty(self, tmp_path) -> None:
+        app = create_app(str(tmp_path / "empty.db"))
+        with TestClient(app) as empty_client:
+            response = empty_client.get("/")
+        assert "No completed runs yet" in response.text
+        assert "Compare models in real time" in response.text  # usable with zero runs
 
     def test_dashboard_empty_state(self, tmp_path) -> None:
         app = create_app(str(tmp_path / "empty.db"))

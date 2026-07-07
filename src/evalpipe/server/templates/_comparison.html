@@ -1,0 +1,77 @@
+{# Reusable real-time comparison widget. Requires `integrations` in context and
+   the /static/playground.js script loaded on the page. Used on both the
+   dashboard (Overview) and the Playground page. #}
+<div class="integrations" aria-label="Provider integrations">
+  {% for provider in integrations %}
+  <span class="integration {{ 'on' if provider.configured else 'off' }}">
+    <span class="dot" aria-hidden="true"></span>
+    {{ provider.label }}
+    {% if provider.env %}<span class="int-env">{{ 'ready' if provider.configured else provider.env + ' not set' }}</span>{% endif %}
+  </span>
+  {% endfor %}
+</div>
+
+<form id="pg-form" class="card" style="margin-top:16px">
+  <div class="field">
+    <label for="pg-prompt">Prompt</label>
+    <textarea id="pg-prompt" required maxlength="20000" placeholder="What is the capital of France?"></textarea>
+  </div>
+  <div class="field">
+    <label for="pg-reference">Reference answer <span class="hint" style="display:inline">(optional — enables reference-based metrics)</span></label>
+    <input type="text" id="pg-reference" placeholder="The capital of France is Paris.">
+  </div>
+
+  <div class="field">
+    <label>Metrics <span class="hint" style="display:inline">(scored on every model's output)</span></label>
+    <div class="metric-toggles">
+      <label class="toggle"><input type="checkbox" class="pg-metric" value="exact_match" checked> Exact match</label>
+      <label class="toggle"><input type="checkbox" class="pg-metric" value="token_f1" checked> Token F1</label>
+      <label class="toggle"><input type="checkbox" class="pg-metric" value="semantic_similarity" checked> Semantic similarity</label>
+      <label class="toggle"><input type="checkbox" class="pg-metric" value="contains"> Contains reference</label>
+    </div>
+  </div>
+
+  <div class="pg-columns pg-3">
+    {% for side in ['a', 'b', 'c'] %}
+    <fieldset class="card provider-card" data-side="{{ side }}">
+      <legend>Model {{ side | upper }}{% if side == 'c' %} <span class="hint" style="display:inline;text-transform:none;letter-spacing:0">optional</span>{% endif %}</legend>
+      <div class="field">
+        <label for="pg-type-{{ side }}">Provider</label>
+        <select id="pg-type-{{ side }}" data-side="{{ side }}" class="pg-type">
+          <option value="mock">Simulation (offline)</option>
+          <option value="openai">OpenAI · ChatGPT</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="gemini">Google Gemini</option>
+          <option value="openai_compatible">OpenAI-compatible (local / proxy)</option>
+          {% if side == 'c' %}<option value="none" selected>— none —</option>{% endif %}
+        </select>
+      </div>
+      <div class="field pg-model-field" data-side="{{ side }}">
+        <label for="pg-model-{{ side }}">Model id</label>
+        <input type="text" id="pg-model-{{ side }}" placeholder="e.g. gpt-4o-mini">
+      </div>
+      <div class="field pg-mock-only" data-side="{{ side }}">
+        <label for="pg-quality-{{ side }}">Simulated quality (0–1)</label>
+        <input type="number" id="pg-quality-{{ side }}" min="0" max="1" step="0.05" value="{{ '0.7' if side == 'a' else '0.9' }}">
+      </div>
+      <div class="field pg-http-only" data-side="{{ side }}" hidden>
+        <label for="pg-url-{{ side }}">Base URL</label>
+        <input type="url" id="pg-url-{{ side }}" placeholder="http://localhost:11434/v1">
+      </div>
+      <div class="field pg-http-only" data-side="{{ side }}" hidden>
+        <label for="pg-keyenv-{{ side }}">API key env var <span class="hint" style="display:inline;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input type="text" id="pg-keyenv-{{ side }}" placeholder="MY_PROVIDER_API_KEY">
+      </div>
+    </fieldset>
+    {% endfor %}
+  </div>
+
+  <button class="btn" type="submit" id="pg-submit" style="margin-top:16px">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3 19 12 5 21z"/></svg>
+    Run comparison
+  </button>
+  <p class="hint" style="margin-top:10px">Hosted providers read their API key from a server-side environment variable — keys are never entered here or sent to the browser.</p>
+</form>
+
+<div id="pg-results" class="pg-columns pg-3" hidden></div>
+<div id="pg-error" class="pg-error" role="alert" hidden></div>

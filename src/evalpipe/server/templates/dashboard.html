@@ -106,4 +106,17 @@
   </div>
 </div>
 {% endif %}
+
+<section style="margin-top:32px">
+  <div class="filter-row" style="margin:0 0 4px">
+    <h2 style="font-size:19px">Compare models in real time</h2>
+    <a href="/playground" style="font-size:13px">Open full playground →</a>
+  </div>
+  <p class="card-note" style="margin:0 0 16px;max-width:720px">Send one prompt to OpenAI, Anthropic, Gemini or a local model and score every output live with the metric suite — no run required.</p>
+  {% include "_comparison.html" %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/playground.js" defer></script>
 {% endblock %}
