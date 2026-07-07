@@ -52,7 +52,7 @@
       </div>
       <div class="field pg-mock-only" data-side="{{ side }}">
         <label for="pg-quality-{{ side }}">Simulated quality (0–1)</label>
-        <input type="number" id="pg-quality-{{ side }}" min="0" max="1" step="0.05" value="{{ '0.7' if side == 'a' else '0.9' }}">
+        <input type="number" id="pg-quality-{{ side }}" min="0" max="1" step="0.05" value="{{ '0.9' if side == 'a' else '0.5' }}">
       </div>
       <div class="field pg-http-only" data-side="{{ side }}" hidden>
         <label for="pg-url-{{ side }}">Base URL</label>
@@ -73,5 +73,6 @@
   <p class="hint" style="margin-top:10px">Hosted providers read their API key from a server-side environment variable — keys are never entered here or sent to the browser.</p>
 </form>
 
+<div id="pg-conclusion" hidden></div>
 <div id="pg-results" class="pg-columns pg-3" hidden></div>
 <div id="pg-error" class="pg-error" role="alert" hidden></div>

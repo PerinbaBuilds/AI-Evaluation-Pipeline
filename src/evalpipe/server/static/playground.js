@@ -83,6 +83,71 @@
   }
 
   function pct(x) { return Math.round(x * 1000) / 10 + "%"; }
+  function r3(x) { return Math.round(x * 1000) / 1000; }
+
+  // Rank successful results: quality first (mean score, then pass), then latency, then cost.
+  function rankResults(ok) {
+    return ok.slice().sort(function (a, b) {
+      var am = a.mean_score, bm = b.mean_score;
+      if (am !== null && bm !== null && Math.abs(am - bm) > 1e-9) return bm - am;
+      if (!!a.passed !== !!b.passed) return (b.passed ? 1 : 0) - (a.passed ? 1 : 0);
+      if (Math.abs(a.latency_ms - b.latency_ms) > 1) return a.latency_ms - b.latency_ms;
+      return a.cost_usd - b.cost_usd;
+    });
+  }
+
+  function conclusionNode(results) {
+    var ok = results.filter(function (r) { return !r.error; });
+    var wrap = document.createElement("div");
+    if (ok.length < 2) {
+      if (ok.length === 1 && results.length > 1) {
+        wrap.className = "verdict neutral";
+        wrap.innerHTML = "<div><div class='title'>Inconclusive</div>" +
+          "<div class='detail'>Only one model returned a result; the others errored.</div></div>";
+        return wrap;
+      }
+      return null;
+    }
+
+    var ranked = rankResults(ok);
+    var best = ranked[0], second = ranked[1];
+    var hasScores = best.mean_score !== null && second.mean_score !== null;
+    var scoreGap = hasScores && Math.abs(best.mean_score - second.mean_score) > 1e-9;
+    var passGap = !!best.passed !== !!second.passed;
+    var latGap = Math.abs(best.latency_ms - second.latency_ms) > 1;
+
+    var reason, decisive = true;
+    if (scoreGap) reason = "highest mean score (" + r3(best.mean_score) + " vs " + r3(second.mean_score) + ")";
+    else if (passGap) reason = "the only model passing every metric";
+    else if (hasScores && latGap) reason = "same quality — fastest (" + Math.round(best.latency_ms) + " ms vs " + Math.round(second.latency_ms) + " ms)";
+    else if (!hasScores && latGap) reason = "fastest response (" + Math.round(best.latency_ms) + " ms)";
+    else if (best.cost_usd + 1e-9 < second.cost_usd) reason = "same quality and speed — lowest cost";
+    else { decisive = false; reason = "no measurable difference between the models on these metrics"; }
+
+    wrap.className = "verdict " + (decisive ? "good" : "neutral");
+    var trophy = decisive
+      ? "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4zM5 4H3v2a3 3 0 0 0 3 3M19 4h2v2a3 3 0 0 1-3 3'/></svg>"
+      : "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='10'/><path d='M8 12h8'/></svg>";
+
+    var ranking = ranked.map(function (r, i) {
+      var bits = [];
+      if (r.mean_score !== null) bits.push("mean " + r3(r.mean_score));
+      if (r.passed !== null) bits.push(r.passed ? "pass" : "fail");
+      bits.push(Math.round(r.latency_ms) + " ms");
+      bits.push("$" + r.cost_usd.toFixed(4));
+      return "<span class='rank-item'><b>" + (i + 1) + ".</b> " + (r.model || "(model)") +
+        " <span class='rank-meta'>" + bits.join(" · ") + "</span></span>";
+    }).join("");
+
+    var title = decisive ? ("Winner: " + (best.model || "(model)")) : "It's a tie";
+    var errored = results.length - ok.length;
+    var detail = (decisive ? "Best by " + reason + "." : reason.charAt(0).toUpperCase() + reason.slice(1) + ".") +
+      (errored ? " " + errored + " model(s) errored and were excluded." : "");
+    wrap.innerHTML = trophy + "<div style='min-width:0'><div class='title'>" + title + "</div>" +
+      "<div class='detail'>" + detail + "</div>" +
+      "<div class='ranking'>" + ranking + "</div></div>";
+    return wrap;
+  }
 
   function resultCard(result) {
     var card = document.createElement("div");
@@ -147,7 +212,10 @@
     var submit = document.getElementById("pg-submit");
     var errorBox = document.getElementById("pg-error");
     var resultsBox = document.getElementById("pg-results");
+    var conclusionBox = document.getElementById("pg-conclusion");
     errorBox.hidden = true;
+    conclusionBox.hidden = true;
+    conclusionBox.innerHTML = "";
 
     var providers = SIDES.map(providerConfig).filter(Boolean);
     if (!providers.length) {
@@ -183,6 +251,11 @@
         body.results.forEach(function (result) {
           resultsBox.appendChild(resultCard(result));
         });
+        var conclusion = conclusionNode(body.results);
+        if (conclusion) {
+          conclusionBox.appendChild(conclusion);
+          conclusionBox.hidden = false;
+        }
       })
       .catch(function (error) {
         errorBox.textContent = error.message;
