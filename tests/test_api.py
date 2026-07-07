@@ -243,6 +243,9 @@ def test_slices_endpoint_groups_by_metadata(tmp_path) -> None:
         assert by_type["openai"]["configured"] is True
         assert by_type["anthropic"]["configured"] is False
         assert by_type["mock"]["configured"] is True  # no key needed
+        # free options are listed; local ones need no key
+        assert by_type["ollama"]["configured"] is True
+        assert {"groq", "openrouter", "gemini"} <= set(by_type)
 
     def test_playground_provider_error_is_isolated(self, client: TestClient) -> None:
         response = client.post(

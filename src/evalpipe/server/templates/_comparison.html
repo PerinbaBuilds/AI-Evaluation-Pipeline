@@ -38,11 +38,18 @@
       <div class="field">
         <label for="pg-type-{{ side }}">Provider</label>
         <select id="pg-type-{{ side }}" data-side="{{ side }}" class="pg-type">
-          <option value="mock">Simulation (offline)</option>
-          <option value="openai">OpenAI · ChatGPT</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="gemini">Google Gemini</option>
-          <option value="openai_compatible">OpenAI-compatible (local / proxy)</option>
+          <option value="mock">Simulation (offline, free)</option>
+          <optgroup label="Free tiers">
+            <option value="gemini">Google Gemini (free tier)</option>
+            <option value="groq">Groq (free tier)</option>
+            <option value="openrouter">OpenRouter (free models)</option>
+            <option value="ollama">Ollama (local, free)</option>
+          </optgroup>
+          <optgroup label="Paid / bring your own key">
+            <option value="openai">OpenAI · ChatGPT</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="openai_compatible">OpenAI-compatible (proxy)</option>
+          </optgroup>
           {% if side == 'c' %}<option value="none" selected>— none —</option>{% endif %}
         </select>
       </div>

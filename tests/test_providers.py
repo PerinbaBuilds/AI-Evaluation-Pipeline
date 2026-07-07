@@ -358,3 +358,52 @@ class TestBuildHostedProviders:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
             build_provider(AnthropicProviderConfig(model="m"))
+
+
+class TestFreeProviderPresets:
+    def test_groq_builds_with_env_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import GroqProviderConfig
+
+        monkeypatch.setenv("GROQ_API_KEY", "gsk-x")
+        provider = build_provider(GroqProviderConfig())
+        assert isinstance(provider, OpenAICompatibleProvider)
+        assert provider.model == "llama-3.3-70b-versatile"
+
+    def test_openrouter_builds_with_env_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import OpenRouterProviderConfig
+
+        monkeypatch.setenv("OPENROUTER_API_KEY", "or-x")
+        provider = build_provider(OpenRouterProviderConfig())
+        assert isinstance(provider, OpenAICompatibleProvider)
+        assert ":free" in provider.model
+
+    def test_ollama_builds_without_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import OllamaProviderConfig
+
+        monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+        provider = build_provider(OllamaProviderConfig())  # no API key required
+        assert isinstance(provider, OpenAICompatibleProvider)
+
+    def test_groq_missing_key_fails(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import GroqProviderConfig
+
+        monkeypatch.delenv("GROQ_API_KEY", raising=False)
+        with pytest.raises(ConfigError, match="GROQ_API_KEY"):
+            build_provider(GroqProviderConfig())
+
+    async def test_ollama_talks_openai_wire_format(self) -> None:
+        # Ollama's /v1 is OpenAI-compatible; the provider must post chat/completions.
+        from evalpipe.providers.openai_compat import OpenAICompatibleProvider
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            assert request.url.path.endswith("/chat/completions")
+            return httpx.Response(200, json={"choices": [{"message": {"content": "hi"}}]})
+
+        provider = OpenAICompatibleProvider(
+            base_url="http://localhost:11434/v1",
+            model="llama3.2",
+            transport=httpx.MockTransport(handler),
+        )
+        response = await provider.generate("Q?")
+        assert response.text == "hi"
+        await provider.aclose()

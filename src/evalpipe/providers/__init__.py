@@ -12,9 +12,12 @@ import os
 from evalpipe.config import (
     AnthropicProviderConfig,
     GeminiProviderConfig,
+    GroqProviderConfig,
     MockProviderConfig,
+    OllamaProviderConfig,
     OpenAICompatibleProviderConfig,
     OpenAIProviderConfig,
+    OpenRouterProviderConfig,
     ProviderConfig,
 )
 from evalpipe.exceptions import ConfigError
@@ -70,11 +73,16 @@ def build_provider(config: ProviderConfig) -> ModelProvider:
             input_cost_per_1k_tokens=config.input_cost_per_1k_tokens,
             output_cost_per_1k_tokens=config.output_cost_per_1k_tokens,
         )
-    if isinstance(config, OpenAIProviderConfig):
+    if isinstance(
+        config,
+        OpenAIProviderConfig | GroqProviderConfig | OpenRouterProviderConfig | OllamaProviderConfig,
+    ):
+        # OpenAI-compatible presets: differ only in default base_url / key env.
+        api_key = _require_key(config.api_key_env) if config.api_key_env else None
         return OpenAICompatibleProvider(
             base_url=config.base_url,
             model=config.model,
-            api_key=_require_key(config.api_key_env),
+            api_key=api_key,
             temperature=config.temperature,
             max_tokens=config.max_tokens,
             timeout_s=config.timeout_s,

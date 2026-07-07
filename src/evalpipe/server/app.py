@@ -418,8 +418,11 @@ def _results_to_csv(results: list[ItemResult]) -> str:
 _INTEGRATIONS = (
     ("openai", "OpenAI · ChatGPT", "OPENAI_API_KEY"),
     ("anthropic", "Anthropic", "ANTHROPIC_API_KEY"),
-    ("gemini", "Google Gemini", "GEMINI_API_KEY"),
-    ("openai_compatible", "OpenAI-compatible · local / proxy", None),
+    ("gemini", "Google Gemini · free tier", "GEMINI_API_KEY"),
+    ("groq", "Groq · free tier", "GROQ_API_KEY"),
+    ("openrouter", "OpenRouter · free models", "OPENROUTER_API_KEY"),
+    ("ollama", "Ollama · local, free", None),
+    ("openai_compatible", "OpenAI-compatible · proxy", None),
     ("mock", "Simulation · offline", None),
 )
 

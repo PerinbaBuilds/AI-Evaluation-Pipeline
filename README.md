@@ -208,13 +208,20 @@ need to detect a given lift.
 
 ### Model providers
 
-| `type` | Talks to | API key env var |
-|---|---|---|
-| `mock` | Deterministic offline simulation | — |
-| `openai` | OpenAI Chat Completions (ChatGPT) | `OPENAI_API_KEY` |
-| `anthropic` | Anthropic Messages API | `ANTHROPIC_API_KEY` |
-| `gemini` | Google Gemini `generateContent` | `GEMINI_API_KEY` |
-| `openai_compatible` | Any OpenAI-style endpoint (vLLM, Ollama, proxies) | configurable |
+| `type` | Talks to | Cost | API key env var |
+|---|---|---|---|
+| `mock` | Deterministic offline simulation | free | — |
+| `ollama` | Local models via Ollama | free (local) | — |
+| `gemini` | Google Gemini `generateContent` | free tier | `GEMINI_API_KEY` |
+| `groq` | Groq (fast hosted open models) | free tier | `GROQ_API_KEY` |
+| `openrouter` | OpenRouter (incl. `:free` models) | free models | `OPENROUTER_API_KEY` |
+| `openai` | OpenAI Chat Completions (ChatGPT) | paid | `OPENAI_API_KEY` |
+| `anthropic` | Anthropic Messages API | paid | `ANTHROPIC_API_KEY` |
+| `openai_compatible` | Any other OpenAI-style endpoint (vLLM, proxies) | varies | configurable |
+
+**Free ways to try real models:** run [Ollama](https://ollama.com) locally (no key), or grab a
+free key from [Google AI Studio](https://aistudio.google.com/apikey) (Gemini),
+[Groq](https://console.groq.com) or [OpenRouter](https://openrouter.ai) and pick a `:free` model.
 
 Set the relevant key in the environment before starting the server, then pick the
 provider (and enter a model id) in the **Playground**, or reference it in a run config.

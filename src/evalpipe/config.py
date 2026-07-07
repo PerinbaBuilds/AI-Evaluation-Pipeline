@@ -97,7 +97,7 @@ class AnthropicProviderConfig(BaseModel):
 
 
 class GeminiProviderConfig(BaseModel):
-    """Google Gemini generateContent API."""
+    """Google Gemini generateContent API (free tier available)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -112,12 +112,63 @@ class GeminiProviderConfig(BaseModel):
     output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
 
 
+class GroqProviderConfig(BaseModel):
+    """Groq (OpenAI-compatible, free tier) — fast hosted open models."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["groq"] = "groq"
+    model: str = "llama-3.3-70b-versatile"
+    base_url: str = "https://api.groq.com/openai/v1"
+    api_key_env: str = "GROQ_API_KEY"
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=512, ge=1)
+    timeout_s: float = Field(default=60.0, gt=0.0)
+    input_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+    output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+
+
+class OpenRouterProviderConfig(BaseModel):
+    """OpenRouter (OpenAI-compatible) — includes free ``:free`` models."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["openrouter"] = "openrouter"
+    model: str = "meta-llama/llama-3.3-70b-instruct:free"
+    base_url: str = "https://openrouter.ai/api/v1"
+    api_key_env: str = "OPENROUTER_API_KEY"
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=512, ge=1)
+    timeout_s: float = Field(default=60.0, gt=0.0)
+    input_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+    output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+
+
+class OllamaProviderConfig(BaseModel):
+    """Ollama (OpenAI-compatible) — fully free, runs models locally, no API key."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["ollama"] = "ollama"
+    model: str = "llama3.2"
+    base_url: str = "http://localhost:11434/v1"
+    api_key_env: str | None = None
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=512, ge=1)
+    timeout_s: float = Field(default=120.0, gt=0.0)
+    input_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+    output_cost_per_1k_tokens: float = Field(default=0.0, ge=0.0)
+
+
 ProviderConfig = Annotated[
     MockProviderConfig
     | OpenAICompatibleProviderConfig
     | OpenAIProviderConfig
     | AnthropicProviderConfig
-    | GeminiProviderConfig,
+    | GeminiProviderConfig
+    | GroqProviderConfig
+    | OpenRouterProviderConfig
+    | OllamaProviderConfig,
     Field(discriminator="type"),
 ]
 
