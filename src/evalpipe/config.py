@@ -49,6 +49,9 @@ class OpenAICompatibleProviderConfig(BaseModel):
     model: str
     base_url: str
     api_key_env: str | None = None
+    # Optional inline key for interactive/API use only. Excluded from every
+    # serialisation so it is never written to disk, logged, or returned.
+    api_key: str | None = Field(default=None, repr=False, exclude=True)
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(default=512, ge=1)
     timeout_s: float = Field(default=30.0, gt=0.0)
@@ -72,6 +75,7 @@ class OpenAIProviderConfig(BaseModel):
     model: str = "gpt-4o-mini"
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
+    api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(default=512, ge=1)
     timeout_s: float = Field(default=60.0, gt=0.0)
@@ -88,6 +92,7 @@ class AnthropicProviderConfig(BaseModel):
     model: str
     base_url: str = "https://api.anthropic.com"
     api_key_env: str = "ANTHROPIC_API_KEY"
+    api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
     api_version: str = "2023-06-01"
     temperature: float = Field(default=0.0, ge=0.0, le=1.0)
     max_tokens: int = Field(default=512, ge=1)
@@ -105,6 +110,7 @@ class GeminiProviderConfig(BaseModel):
     model: str = "gemini-1.5-flash"
     base_url: str = "https://generativelanguage.googleapis.com"
     api_key_env: str = "GEMINI_API_KEY"
+    api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(default=512, ge=1)
     timeout_s: float = Field(default=60.0, gt=0.0)
@@ -121,6 +127,7 @@ class GroqProviderConfig(BaseModel):
     model: str = "llama-3.3-70b-versatile"
     base_url: str = "https://api.groq.com/openai/v1"
     api_key_env: str = "GROQ_API_KEY"
+    api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(default=512, ge=1)
     timeout_s: float = Field(default=60.0, gt=0.0)
@@ -137,6 +144,7 @@ class OpenRouterProviderConfig(BaseModel):
     model: str = "meta-llama/llama-3.3-70b-instruct:free"
     base_url: str = "https://openrouter.ai/api/v1"
     api_key_env: str = "OPENROUTER_API_KEY"
+    api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(default=512, ge=1)
     timeout_s: float = Field(default=60.0, gt=0.0)
@@ -153,6 +161,7 @@ class OllamaProviderConfig(BaseModel):
     model: str = "llama3.2"
     base_url: str = "http://localhost:11434/v1"
     api_key_env: str | None = None
+    api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(default=512, ge=1)
     timeout_s: float = Field(default=120.0, gt=0.0)
@@ -308,6 +317,27 @@ class EvalConfig(BaseModel):
         return self.prompt_template.replace("{prompt}", prompt)
 
 
+def _reject_inline_keys(config: EvalConfig) -> None:
+    """Refuse secrets baked into config files.
+
+    Inline ``api_key`` values are meant only for interactive/API use, where they
+    live for a single request. Config files are committed to disk and version
+    control, so a key there is a leak waiting to happen — name an environment
+    variable with ``api_key_env`` instead.
+    """
+    providers = [config.provider]
+    providers += [
+        ev.provider
+        for ev in config.evaluators
+        if isinstance(ev, LLMJudgeConfig) and ev.provider is not None
+    ]
+    if any(getattr(provider, "api_key", None) for provider in providers):
+        raise ConfigError(
+            "API keys must not be stored in config files; name an environment "
+            "variable with api_key_env instead."
+        )
+
+
 def load_config(path: str | Path) -> EvalConfig:
     """Load an :class:`EvalConfig` from a YAML (or JSON) file."""
     path = Path(path)
@@ -320,8 +350,10 @@ def load_config(path: str | Path) -> EvalConfig:
     if not isinstance(payload, dict):
         raise ConfigError(f"{path}: expected a mapping at the top level")
     try:
-        return EvalConfig.model_validate(payload)
+        config = EvalConfig.model_validate(payload)
     except ValidationError as exc:
         first = exc.errors()[0]
         loc = ".".join(str(part) for part in first["loc"]) or "config"
         raise ConfigError(f"{path}: invalid config ({loc}: {first['msg']})") from exc
+    _reject_inline_keys(config)
+    return config

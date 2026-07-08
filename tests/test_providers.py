@@ -407,3 +407,42 @@ class TestFreeProviderPresets:
         response = await provider.generate("Q?")
         assert response.text == "hi"
         await provider.aclose()
+
+
+class TestInlineApiKey:
+    """A key supplied inline on the config (interactive/API use) is honoured
+    without an environment variable, wins over one, and is never serialised."""
+
+    def test_inline_key_builds_without_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import OpenAIProviderConfig
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        provider = build_provider(OpenAIProviderConfig(model="gpt-4o-mini", api_key="sk-inline"))
+        assert isinstance(provider, OpenAICompatibleProvider)
+        assert provider._client.headers.get("authorization") == "Bearer sk-inline"
+
+    def test_inline_key_overrides_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalpipe.config import OpenAIProviderConfig
+
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-env")
+        provider = build_provider(OpenAIProviderConfig(model="gpt-4o-mini", api_key="sk-inline"))
+        assert isinstance(provider, OpenAICompatibleProvider)
+        assert provider._client.headers.get("authorization") == "Bearer sk-inline"
+
+    def test_inline_key_lets_anthropic_build_without_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from evalpipe.config import AnthropicProviderConfig
+        from evalpipe.providers.anthropic import AnthropicProvider
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        provider = build_provider(AnthropicProviderConfig(model="m", api_key="sk-inline"))
+        assert isinstance(provider, AnthropicProvider)
+
+    def test_inline_key_never_serialised(self) -> None:
+        from evalpipe.config import OpenAIProviderConfig
+
+        config = OpenAIProviderConfig(model="gpt-4o-mini", api_key="sk-secret")
+        assert "api_key" not in config.model_dump()
+        assert "sk-secret" not in config.model_dump_json()
+        assert "sk-secret" not in repr(config)

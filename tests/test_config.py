@@ -125,6 +125,44 @@ def test_extra_keys_rejected(tmp_path: Path) -> None:
         load_config(path)
 
 
+INLINE_KEY_YAML = """
+name: demo
+dataset: data.jsonl
+provider:
+  type: openai
+  api_key: sk-should-not-live-in-a-file
+evaluators:
+  - type: exact_match
+"""
+
+
+def test_inline_api_key_rejected_in_config_file(tmp_path: Path) -> None:
+    path = tmp_path / "config.yaml"
+    path.write_text(INLINE_KEY_YAML, encoding="utf-8")
+    with pytest.raises(ConfigError, match="must not be stored in config files"):
+        load_config(path)
+
+
+def test_inline_api_key_in_judge_provider_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "config.yaml"
+    path.write_text(
+        """
+name: demo
+dataset: data.jsonl
+provider:
+  type: mock
+evaluators:
+  - type: llm_judge
+    provider:
+      type: openai
+      api_key: sk-secret
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="must not be stored in config files"):
+        load_config(path)
+
+
 def test_cache_responses_defaults_off_and_is_settable() -> None:
     default = EvalConfig(
         name="x", dataset="d.jsonl", provider=MockProviderConfig(), evaluators=[TokenF1Config()]

@@ -6,6 +6,8 @@
   if (!form) return;
 
   var SIDES = ["a", "b", "c"];
+  // Providers that accept an API key — the inline key field is shown for these.
+  var KEYED = { openai: 1, anthropic: 1, gemini: 1, groq: 1, openrouter: 1, openai_compatible: 1 };
   var MODEL_PLACEHOLDERS = {
     mock: "sim-model",
     openai: "gpt-4o-mini",
@@ -28,6 +30,7 @@
     var isNone = type === "none";
     show(document.querySelectorAll(".pg-mock-only[data-side='" + side + "']"), isMock && !isNone);
     show(document.querySelectorAll(".pg-http-only[data-side='" + side + "']"), isHttp && !isNone);
+    show(document.querySelectorAll(".pg-key-only[data-side='" + side + "']"), !!KEYED[type] && !isNone);
     show(document.querySelectorAll(".pg-model-field[data-side='" + side + "']"), !isNone);
     var modelInput = document.getElementById("pg-model-" + side);
     if (modelInput && MODEL_PLACEHOLDERS[type]) modelInput.placeholder = "e.g. " + MODEL_PLACEHOLDERS[type];
@@ -47,6 +50,8 @@
     var type = typeEl.value;
     if (type === "none") return null;
     var model = (document.getElementById("pg-model-" + side).value || "").trim();
+    var keyEl = document.getElementById("pg-key-" + side);
+    var apiKey = KEYED[type] && keyEl ? keyEl.value.trim() : "";
     if (type === "mock") {
       return {
         type: "mock",
@@ -65,12 +70,14 @@
       };
       var keyEnv = document.getElementById("pg-keyenv-" + side).value.trim();
       if (keyEnv) cfg.api_key_env = keyEnv;
+      if (apiKey) cfg.api_key = apiKey;
       return cfg;
     }
-    // openai / anthropic / gemini — use built-in defaults; model optional
+    // openai / anthropic / gemini / groq / openrouter — built-in defaults; model optional
     var out = { type: type };
     if (model) out.model = model;
     else if (type === "anthropic") out.model = "";
+    if (apiKey) out.api_key = apiKey;
     return out;
   }
 

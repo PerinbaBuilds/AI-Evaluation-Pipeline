@@ -57,6 +57,10 @@
         <label for="pg-model-{{ side }}">Model id</label>
         <input type="text" id="pg-model-{{ side }}" placeholder="e.g. gpt-4o-mini">
       </div>
+      <div class="field pg-key-only" data-side="{{ side }}" hidden>
+        <label for="pg-key-{{ side }}">API key <span class="hint" style="display:inline;text-transform:none;letter-spacing:0">(used for this run only — not stored)</span></label>
+        <input type="password" id="pg-key-{{ side }}" autocomplete="off" spellcheck="false" placeholder="Paste a key to test now, or leave blank to use the server env var">
+      </div>
       <div class="field pg-mock-only" data-side="{{ side }}">
         <label for="pg-quality-{{ side }}">Simulated quality (0–1)</label>
         <input type="number" id="pg-quality-{{ side }}" min="0" max="1" step="0.05" value="{{ '0.9' if side == 'a' else '0.5' }}">
@@ -77,7 +81,7 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3 19 12 5 21z"/></svg>
     Run comparison
   </button>
-  <p class="hint" style="margin-top:10px">Hosted providers read their API key from a server-side environment variable — keys are never entered here or sent to the browser.</p>
+  <p class="hint" style="margin-top:10px">Paste a key to test a hosted model right away — it's sent to your server for this one request only, never stored, logged, or returned. Leave it blank to use the server-side environment variable instead.</p>
 </form>
 
 <div id="pg-conclusion" hidden></div>
