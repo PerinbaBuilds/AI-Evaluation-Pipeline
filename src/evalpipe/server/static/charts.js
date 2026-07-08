@@ -9,15 +9,15 @@
 (function () {
   "use strict";
 
-  /* Premium dark console — a single, dark-first theme. */
+  /* Light enterprise theme — mirrors the CSS design tokens. */
   var TOKENS = {
-    surface: "#101216",
-    ink: "#eceef1",
-    ink2: "#9aa1ab",
-    muted: "#6a7079",
-    grid: "#20242b",
-    baseline: "#2f343c",
-    series: ["#3b82f6", "#10b981"],
+    surface: "#ffffff",
+    ink: "#14181f",
+    ink2: "#58606c",
+    muted: "#838b98",
+    grid: "#eceef2",
+    baseline: "#d3d7de",
+    series: ["#2f6feb", "#0ca678"],
   };
 
   var SVG_NS = "http://www.w3.org/2000/svg";

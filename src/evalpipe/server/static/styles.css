@@ -1,59 +1,57 @@
-/* EvalPipe — premium dark console.
+/* EvalPipe — light enterprise analytics surface.
  *
- * Deep near-black canvas with a soft emerald glow, glassy panels with hairline
- * borders and inset highlights, one confident emerald accent, tight typography
- * and monospace numerals. A dark-first product surface (Vercel/Linear-grade).
- * Data marks keep the validated (colourblind-safe) dark chart palette; UI text
- * wears neutral ink tokens. Accessibility: AA contrast, visible focus, reduced
- * motion respected, keyboard-reachable chart marks, table-view twins.
+ * A calm, data-first product UI: light-gray canvas, white cards with hairline
+ * borders and restrained shadows, one measured slate-blue accent for
+ * interaction, and semantic green/red/amber reserved for outcomes only.
+ * Tabular monospace numerals; system typography. No gradients, glows or glass.
+ * Accessibility: AA contrast, visible focus, reduced motion respected,
+ * keyboard-reachable chart marks, server-rendered table twins for every chart.
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg: #0a0b0d;
-  --panel-top: rgba(255, 255, 255, 0.045);
-  --panel-bot: rgba(255, 255, 255, 0.015);
-  --surface: #101216;
-  --surface-2: #14171c;
-  --surface-hover: #1a1e24;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --ink: #eceef1;
-  --ink-2: #9aa1ab;
-  --muted: #6a7079;
-  --grid: rgba(255, 255, 255, 0.06);
-  --baseline: rgba(255, 255, 255, 0.16);
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --surface-hover: #f0f2f5;
+  --border: #e5e7eb;
+  --border-strong: #d3d7de;
+  --ink: #14181f;
+  --ink-2: #58606c;
+  --muted: #838b98;
+  --grid: #eceef2;
+  --baseline: #d3d7de;
 
-  --accent: #10b981;
-  --accent-hover: #34d399;
-  --accent-soft: rgba(16, 185, 129, 0.13);
-  --on-accent: #04130d;
+  --accent: #2f6feb;
+  --accent-hover: #1f59cf;
+  --accent-soft: rgba(47, 111, 235, 0.09);
+  --on-accent: #ffffff;
 
-  --series-1: #3b82f6;
-  --series-2: #10b981;
+  --series-1: #2f6feb;
+  --series-2: #0ca678;
 
-  --good: #10b981;
-  --good-text: #6ee7b7;
-  --good-bg: rgba(16, 185, 129, 0.12);
-  --good-border: rgba(16, 185, 129, 0.32);
-  --bad: #f43f5e;
-  --bad-text: #fca5b4;
-  --bad-bg: rgba(244, 63, 94, 0.12);
-  --bad-border: rgba(244, 63, 94, 0.32);
-  --warn-text: #fbbf24;
-  --warn-bg: rgba(251, 191, 36, 0.1);
-  --warn-border: rgba(251, 191, 36, 0.28);
+  --good: #16a34a;
+  --good-text: #157f3c;
+  --good-bg: #eaf6ee;
+  --good-border: #c2e6cd;
+  --bad: #dc2626;
+  --bad-text: #b42318;
+  --bad-bg: #fcecec;
+  --bad-border: #f2cbc7;
+  --warn-text: #b25409;
+  --warn-bg: #fdf3e7;
+  --warn-border: #f3dcb3;
 
-  --sidebar: #0c0d10;
-  --side-border: rgba(255, 255, 255, 0.06);
+  --sidebar: #ffffff;
+  --side-border: #e5e7eb;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 16px 44px rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+  --shadow: 0 1px 2px rgba(17, 24, 39, 0.05), 0 1px 3px rgba(17, 24, 39, 0.04);
+  --shadow-md: 0 10px 28px rgba(17, 24, 39, 0.12);
 
-  --r: 14px;
-  --r-sm: 9px;
+  --r: 10px;
+  --r-sm: 6px;
   --r-pill: 999px;
   --speed: 150ms;
 
@@ -67,11 +65,7 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1100px 560px at 18% -12%, rgba(16, 185, 129, 0.10), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(59, 130, 246, 0.06), transparent 55%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -138,7 +132,7 @@ button, a, summary, select, input, textarea {
   padding: 6px 8px 16px;
 }
 .brand:hover { text-decoration: none; color: var(--ink); }
-.brand svg { display: block; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.45)); }
+.brand svg { display: block; }
 
 .side-nav { display: flex; flex-direction: column; gap: 2px; }
 .side-label {
@@ -208,7 +202,7 @@ button, a, summary, select, input, textarea {
 /* ------------------------------------------------------------------- cards */
 
 .card {
-  background: linear-gradient(180deg, var(--panel-top), var(--panel-bot)), var(--surface);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
   box-shadow: var(--shadow);
@@ -332,8 +326,8 @@ textarea { resize: vertical; min-height: 92px; }
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--accent); color: var(--on-accent);
   border: 1px solid var(--accent); border-radius: var(--r-sm);
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.28);
-  padding: 10px 20px; font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  padding: 10px 20px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
 }
 .btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn:active { transform: translateY(1px); }
@@ -341,7 +335,7 @@ textarea { resize: vertical; min-height: 92px; }
 .btn.loading { color: transparent; position: relative; }
 .btn.loading::after {
   content: ""; position: absolute; width: 15px; height: 15px; top: calc(50% - 7.5px); left: calc(50% - 7.5px);
-  border: 2px solid rgba(4, 19, 13, 0.4); border-top-color: var(--on-accent); border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45); border-top-color: var(--on-accent); border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -373,7 +367,7 @@ fieldset.card legend { font-weight: 620; font-size: 14px; color: var(--ink); pad
 }
 .integration .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
 .integration.on { color: var(--ink); }
-.integration.on .dot { background: var(--accent); box-shadow: 0 0 9px var(--accent); }
+.integration.on .dot { background: var(--good); }
 .integration.off { opacity: 0.72; }
 .int-env { color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
 
@@ -399,7 +393,7 @@ fieldset.card legend { font-weight: 620; font-size: 14px; color: var(--ink); pad
 
 .viz-tooltip {
   position: fixed; pointer-events: none;
-  background: #05070a; color: var(--ink); border: 1px solid var(--border-strong);
+  background: #1d2430; color: #f5f6f8; border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--r-sm); padding: 8px 11px; font-size: 12.5px; line-height: 1.5;
   max-width: 300px; z-index: 50; box-shadow: var(--shadow-md); opacity: 0; transition: opacity 110ms ease;
 }
