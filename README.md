@@ -1,14 +1,3 @@
----
-title: EvalPipe
-emoji: 📊
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 8000
-pinned: false
-license: mit
----
-
 # EvalPipe — AI Evaluation Pipeline
 
 [![CI](https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline/actions/workflows/ci.yml)
@@ -108,7 +97,7 @@ docker build -t evalpipe .
 docker run -p 8000:8000 -e EVALPIPE_SEED_DEMO=1 evalpipe
 ```
 
-**Free hosting (Koyeb):** create a service → *Deploy from GitHub* → pick this repo → Koyeb builds the `Dockerfile` → set `EVALPIPE_SEED_DEMO=1`. It boots with demo data already seeded and gives a public HTTPS URL. The health check is `/api/health`.
+**Free one‑click (Render):** [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline) — Render reads [`render.yaml`](render.yaml), builds the image, and serves it over HTTPS with demo data seeded on first boot. Free instances sleep after ~15 min idle; a 5‑minute uptime ping to `/api/health` (e.g. UptimeRobot) keeps them warm.
 
 ## Documentation
 
