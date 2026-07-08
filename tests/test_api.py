@@ -304,7 +304,7 @@ class TestPages:
         # light/dark theme toggle is present and initialised before paint
         assert 'id="theme-toggle"' in response.text
         assert "evalpipe-theme" in response.text
-        assert 'data-theme' in response.text
+        assert "data-theme" in response.text
 
     def test_self_hosted_font_is_served(self, client: TestClient) -> None:
         response = client.get("/static/fonts/ibm-plex-sans-latin-400-normal.woff2")
