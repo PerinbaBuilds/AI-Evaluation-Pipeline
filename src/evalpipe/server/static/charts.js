@@ -9,16 +9,24 @@
 (function () {
   "use strict";
 
-  /* Light enterprise theme — mirrors the CSS design tokens. */
-  var TOKENS = {
-    surface: "#ffffff",
-    ink: "#14181f",
-    ink2: "#58606c",
-    muted: "#838b98",
-    grid: "#eceef2",
-    baseline: "#d3d7de",
-    series: ["#2f6feb", "#0ca678"],
-  };
+  /* Palette is read from the CSS design tokens so charts track the active
+     (light or dark) theme; refreshed on every renderAll(). */
+  function cssVar(name, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+  function readTokens() {
+    return {
+      surface: cssVar("--surface", "#ffffff"),
+      ink: cssVar("--ink", "#14181f"),
+      ink2: cssVar("--ink-2", "#58606c"),
+      muted: cssVar("--muted", "#838b98"),
+      grid: cssVar("--grid", "#eceef2"),
+      baseline: cssVar("--baseline", "#d3d7de"),
+      series: [cssVar("--series-1", "#2f6feb"), cssVar("--series-2", "#0ca678")],
+    };
+  }
+  var TOKENS = readTokens();
 
   var SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -332,6 +340,7 @@
   var RENDERERS = { line: lineChart, bar: barChart, hbar: hbarChart, "grouped-bar": groupedBarChart };
 
   function renderAll() {
+    TOKENS = readTokens(); /* pick up the current theme's colours */
     document.querySelectorAll("[data-chart]").forEach(function (container) {
       var script = container.querySelector("script[type='application/json']");
       if (!script) return;

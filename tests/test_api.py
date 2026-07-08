@@ -301,6 +301,15 @@ class TestPages:
         # the overview carries per-run charts, not just the trend line
         assert "Score distribution — latest run" in response.text
         assert "Mean score by evaluator — latest run" in response.text
+        # light/dark theme toggle is present and initialised before paint
+        assert 'id="theme-toggle"' in response.text
+        assert "evalpipe-theme" in response.text
+        assert 'data-theme' in response.text
+
+    def test_self_hosted_font_is_served(self, client: TestClient) -> None:
+        response = client.get("/static/fonts/ibm-plex-sans-latin-400-normal.woff2")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "font/woff2"
 
     def test_dashboard_comparison_available_when_empty(self, tmp_path) -> None:
         app = create_app(str(tmp_path / "empty.db"))

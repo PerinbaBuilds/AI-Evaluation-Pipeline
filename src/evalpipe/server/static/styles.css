@@ -8,6 +8,33 @@
  * keyboard-reachable chart marks, server-rendered table twins for every chart.
  */
 
+/* Self-hosted IBM Plex — a technical, corporate typeface (not the Inter/Geist
+   default). woff2, latin subset, served locally so the app stays offline-capable. */
+@font-face {
+  font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/static/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/static/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/static/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/static/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/static/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/static/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+}
+
 :root {
   color-scheme: light;
 
@@ -55,8 +82,54 @@
   --r-pill: 999px;
   --speed: 150ms;
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* --------------------------------------------------------------- dark theme
+   Opt-in via data-theme="dark" on <html> (set by the toggle before paint).
+   Only the tokens change; every rule already reads them. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0f1216;
+  --surface: #161b22;
+  --surface-2: #1c222b;
+  --surface-hover: #232a34;
+  --border: #2a323d;
+  --border-strong: #3a4552;
+  --ink: #e7eaef;
+  --ink-2: #a5adba;
+  --muted: #7b8494;
+  --grid: #232a33;
+  --baseline: #3a424e;
+
+  --accent: #5b8cff;
+  --accent-hover: #7aa2ff;
+  --accent-soft: rgba(91, 140, 255, 0.14);
+  --on-accent: #0b1120;
+
+  --series-1: #5b8cff;
+  --series-2: #2dd4a7;
+
+  --good: #34d399;
+  --good-text: #6ee7b7;
+  --good-bg: rgba(52, 211, 153, 0.13);
+  --good-border: rgba(52, 211, 153, 0.30);
+  --bad: #f87171;
+  --bad-text: #fca5a5;
+  --bad-bg: rgba(248, 113, 113, 0.13);
+  --bad-border: rgba(248, 113, 113, 0.30);
+  --warn-text: #fbbf24;
+  --warn-bg: rgba(251, 191, 36, 0.12);
+  --warn-border: rgba(251, 191, 36, 0.28);
+
+  --sidebar: #12161c;
+  --side-border: #232a33;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; }
@@ -174,6 +247,21 @@ button, a, summary, select, input, textarea {
 .side-tag { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
 .side-ver { font-size: 11px; color: var(--muted); margin-top: 6px; font-family: var(--font-mono); }
 
+.theme-toggle {
+  display: inline-flex; align-items: center; gap: 9px; width: 100%;
+  margin-bottom: 13px; background: var(--surface-2); color: var(--ink-2);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.theme-toggle:hover { background: var(--surface-hover); color: var(--ink); border-color: var(--border-strong); }
+.theme-toggle svg {
+  width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
+  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+}
+.theme-toggle .ic-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .ic-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .ic-sun { display: inline; }
+
 .main { flex: 1; min-width: 0; }
 .content { max-width: 1200px; margin: 0 auto; padding: 40px 44px 84px; }
 
@@ -184,7 +272,11 @@ button, a, summary, select, input, textarea {
     flex-direction: row; align-items: center; gap: 4px; padding: 10px 14px; overflow-x: auto;
   }
   .brand { padding: 0 12px 0 4px; }
-  .side-label, .side-foot { display: none; }
+  .side-label { display: none; }
+  .side-foot { display: flex; align-items: center; margin: 0 0 0 auto; padding: 0; border: none; }
+  .side-foot .side-tag, .side-foot .side-ver { display: none; }
+  .theme-toggle { width: auto; margin: 0; padding: 7px 9px; }
+  .theme-toggle .theme-label { display: none; }
   .side-nav { flex-direction: row; gap: 2px; }
   .side-nav a { white-space: nowrap; padding: 8px 12px; }
   .content { padding: 26px 20px 64px; }
