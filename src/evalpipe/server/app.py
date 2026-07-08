@@ -77,8 +77,10 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
 
     # ------------------------------------------------------------------------ API
 
-    @app.get("/api/health", response_model=HealthResponse)
+    @app.api_route("/api/health", methods=["GET", "HEAD"], response_model=HealthResponse)
     async def health() -> HealthResponse:
+        # HEAD is allowed too: uptime monitors (e.g. UptimeRobot) ping with HEAD,
+        # and a GET-only route would answer 405 and be flagged as "down".
         return HealthResponse(status="ok", version=__version__)
 
     @app.get("/metrics", response_class=PlainTextResponse, include_in_schema=False)
@@ -244,7 +246,9 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
 
     # ---------------------------------------------------------------------- pages
 
-    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    @app.api_route(
+        "/", methods=["GET", "HEAD"], response_class=HTMLResponse, include_in_schema=False
+    )
     async def dashboard_page(request: Request) -> HTMLResponse:
         records = storage.list_runs(limit=100)
         completed = [record for record in records if record.status == "completed"]

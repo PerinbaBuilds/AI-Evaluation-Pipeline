@@ -41,6 +41,11 @@ class TestApi:
         assert body["status"] == "ok"
         assert body["version"]
 
+    def test_head_requests_are_allowed(self, client: TestClient) -> None:
+        # uptime monitors ping with HEAD; a GET-only route would answer 405.
+        assert client.head("/api/health").status_code == 200
+        assert client.head("/").status_code == 200
+
     def test_list_runs(self, client: TestClient) -> None:
         body = client.get("/api/runs").json()
         assert body["total"] == 2
