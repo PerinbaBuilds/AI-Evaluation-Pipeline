@@ -53,10 +53,12 @@
     var keyEl = document.getElementById("pg-key-" + side);
     var apiKey = KEYED[type] && keyEl ? keyEl.value.trim() : "";
     if (type === "mock") {
+      var q = parseFloat(document.getElementById("pg-quality-" + side).value);
+      if (isNaN(q)) q = 0.8;
       return {
         type: "mock",
         model: model || "sim-model",
-        quality: parseFloat(document.getElementById("pg-quality-" + side).value) || 0.8,
+        quality: q,
         latency_ms: 40,
         input_cost_per_1k_tokens: 0.25,
         output_cost_per_1k_tokens: 1.25,
@@ -145,11 +147,11 @@
       if (r.passed !== null) bits.push(r.passed ? "pass" : "fail");
       bits.push(Math.round(r.latency_ms) + " ms");
       bits.push("$" + r.cost_usd.toFixed(4));
-      return "<span class='rank-item'><b>" + (i + 1) + ".</b> " + (r.model || "(model)") +
+      return "<span class='rank-item'><b>" + (i + 1) + ".</b> " + (r.label || r.model || "(model)") +
         " <span class='rank-meta'>" + bits.join(" · ") + "</span></span>";
     }).join("");
 
-    var title = decisive ? ("Winner: " + (best.model || "(model)")) : "It's a tie";
+    var title = decisive ? ("Winner: " + (best.label || best.model || "(model)")) : "It's a tie";
     var errored = results.length - ok.length;
     var detail = (decisive ? "Best by " + reason + "." : reason.charAt(0).toUpperCase() + reason.slice(1) + ".") +
       (errored ? " " + errored + " model(s) errored and were excluded." : "");
@@ -167,7 +169,7 @@
     head.className = "result-head";
     var name = document.createElement("div");
     name.className = "result-model";
-    name.textContent = result.model || "(model)";
+    name.textContent = result.label || result.model || "(model)";
     var tag = document.createElement("span");
     tag.className = "result-tag";
     tag.textContent = result.provider_type || "";
@@ -258,6 +260,12 @@
       .then(function (body) {
         resultsBox.innerHTML = "";
         resultsBox.hidden = false;
+        // Display-only label: tag simulated models with their quality so two
+        // sims are told apart, without changing what was sent to the provider.
+        body.results.forEach(function (result, i) {
+          var pv = providers[i];
+          result.label = pv && pv.type === "mock" ? result.model + " · q" + pv.quality : result.model;
+        });
         body.results.forEach(function (result) {
           resultsBox.appendChild(resultCard(result));
         });
