@@ -1,3 +1,14 @@
+---
+title: EvalPipe
+emoji: 📊
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8000
+pinned: false
+license: mit
+---
+
 # EvalPipe — AI Evaluation Pipeline
 
 [![CI](https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/PerinbaBuilds/AI-Evaluation-Pipeline/actions/workflows/ci.yml)
