@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_chip %}
+{% from "_macros.html" import status_chip, sim_badge %}
 {% set active_nav = 'dashboard' %}
 {% block title %}Dashboard{% endblock %}
 
@@ -92,7 +92,7 @@
         {% for record in records %}
         <tr>
           <td><a href="/runs/{{ record.id }}">{{ record.name }}</a></td>
-          <td class="nowrap">{{ record.model }}</td>
+          <td class="nowrap">{{ record.model }} {{ sim_badge(record.provider_type) }}</td>
           <td>{{ status_chip(record.status) }}</td>
           <td class="num">{{ record.item_count }}</td>
           <td class="num">{% if record.status == 'completed' %}{{ '%.1f' % (record.pass_rate * 100) }}%{% else %}<span class="text-muted">—</span>{% endif %}</td>
@@ -118,5 +118,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/playground.js" defer></script>
+<script src="/static/playground.js?v={{ asset_version }}" defer></script>
 {% endblock %}

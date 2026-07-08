@@ -98,6 +98,10 @@ class RunRecord:
     latency_p50_ms: float
     latency_p95_ms: float
     evaluator_means: dict[str, float]
+    # Provider kind this run used ("mock", "openai", "gemini", ...). Derived from
+    # the stored config so the UI can flag simulated (offline) runs. Defaulted so
+    # constructing a record without it stays backward-compatible.
+    provider_type: str = ""
 
 
 @dataclass(frozen=True)
@@ -391,6 +395,20 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _provider_type_of(row: sqlite3.Row) -> str:
+    """Best-effort read of the provider kind from a run's stored config JSON."""
+    try:
+        raw = row["config_json"]
+    except (IndexError, KeyError):
+        return ""
+    try:
+        config = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return ""
+    provider = config.get("provider") if isinstance(config, dict) else None
+    return str(provider.get("type", "")) if isinstance(provider, dict) else ""
+
+
 def _run_record(row: sqlite3.Row) -> RunRecord:
     return RunRecord(
         id=row["id"],
@@ -409,6 +427,7 @@ def _run_record(row: sqlite3.Row) -> RunRecord:
         latency_p50_ms=row["latency_p50_ms"],
         latency_p95_ms=row["latency_p95_ms"],
         evaluator_means=json.loads(row["evaluator_means"]),
+        provider_type=_provider_type_of(row),
     )
 
 

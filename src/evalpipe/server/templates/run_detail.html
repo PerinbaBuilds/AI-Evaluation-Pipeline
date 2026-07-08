@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_chip, pass_chip %}
+{% from "_macros.html" import status_chip, pass_chip, sim_badge %}
 {% set active_nav = 'dashboard' %}
 {% block title %}{{ run.name }}{% endblock %}
 
 {% block content %}
 <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Dashboard</a> / run detail</nav>
-<h1 class="page-title">{{ run.name }} <span class="text-2" style="font-weight:400">· {{ run.model }}</span></h1>
+<h1 class="page-title">{{ run.name }} <span class="text-2" style="font-weight:400">· {{ run.model }}</span> {{ sim_badge(run.provider_type) }}</h1>
 <p class="page-subtitle">
   {{ status_chip(run.status) }}
   &nbsp; dataset <span class="mono">{{ run.dataset }}</span>

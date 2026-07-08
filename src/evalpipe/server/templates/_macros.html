@@ -16,6 +16,12 @@
 {%- endif %}
 {%- endmacro %}
 
+{% macro sim_badge(provider_type) -%}
+{% if provider_type == 'mock' -%}
+<span class="tag-sim" title="Offline simulator — no real model or API was called">simulated</span>
+{%- endif %}
+{%- endmacro %}
+
 {% macro warn_icon() -%}
 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
 {%- endmacro %}

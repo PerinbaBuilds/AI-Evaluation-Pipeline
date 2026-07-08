@@ -14,7 +14,7 @@
       <select id="baseline" name="baseline" required>
         <option value="">Select a completed run…</option>
         {% for run in completed_runs %}
-        <option value="{{ run.id }}" {% if run.id == baseline_id %}selected{% endif %}>{{ run.name }} · {{ run.model }} · {{ '%.1f' % (run.pass_rate * 100) }}% · {{ run.started_at[:16].replace('T', ' ') }}</option>
+        <option value="{{ run.id }}" {% if run.id == baseline_id %}selected{% endif %}>{{ run.name }} · {{ run.model }}{% if run.provider_type == 'mock' %} · simulated{% endif %} · {{ '%.1f' % (run.pass_rate * 100) }}% · {{ run.started_at[:16].replace('T', ' ') }}</option>
         {% endfor %}
       </select>
     </div>
@@ -23,7 +23,7 @@
       <select id="candidate" name="candidate" required>
         <option value="">Select a completed run…</option>
         {% for run in completed_runs %}
-        <option value="{{ run.id }}" {% if run.id == candidate_id %}selected{% endif %}>{{ run.name }} · {{ run.model }} · {{ '%.1f' % (run.pass_rate * 100) }}% · {{ run.started_at[:16].replace('T', ' ') }}</option>
+        <option value="{{ run.id }}" {% if run.id == candidate_id %}selected{% endif %}>{{ run.name }} · {{ run.model }}{% if run.provider_type == 'mock' %} · simulated{% endif %} · {{ '%.1f' % (run.pass_rate * 100) }}% · {{ run.started_at[:16].replace('T', ' ') }}</option>
         {% endfor %}
       </select>
     </div>

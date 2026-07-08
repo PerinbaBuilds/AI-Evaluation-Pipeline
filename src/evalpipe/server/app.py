@@ -48,6 +48,20 @@ from evalpipe.storage import RunRecord, Storage
 _BASE_DIR = Path(__file__).parent
 
 
+def _asset_version(static_dir: Path) -> str:
+    """Fingerprint the static bundle by its newest file mtime.
+
+    Appended as ``?v=`` to every asset URL so a browser never serves a stale
+    stylesheet or script after the code changes — the query string changes
+    whenever any static file does, forcing a fresh fetch.
+    """
+    latest = 0.0
+    for path in static_dir.glob("*"):
+        if path.is_file():
+            latest = max(latest, path.stat().st_mtime)
+    return str(int(latest))
+
+
 def create_app(db_path: str = "evalpipe.db") -> FastAPI:
     app = FastAPI(
         title="EvalPipe",
@@ -55,8 +69,10 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
         description="Provider-agnostic evaluation pipeline for LLM applications.",
     )
     storage = Storage(db_path)
+    static_dir = _BASE_DIR / "static"
     templates = Jinja2Templates(directory=str(_BASE_DIR / "templates"))
-    app.mount("/static", StaticFiles(directory=str(_BASE_DIR / "static")), name="static")
+    templates.env.globals["asset_version"] = _asset_version(static_dir)
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     background_tasks: set[asyncio.Task[Any]] = set()
 
     # ------------------------------------------------------------------------ API

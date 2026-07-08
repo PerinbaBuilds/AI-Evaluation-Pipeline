@@ -51,6 +51,13 @@ class TestApi:
         assert body["status"] == "completed"
         assert body["pass_rate"] == 1.0
 
+    def test_runs_expose_provider_type(self, client: TestClient) -> None:
+        # runs carry the provider kind (derived from stored config) so the UI can
+        # flag simulated (offline) runs; the seeded runs use the mock provider.
+        body = client.get("/api/runs").json()
+        assert body["runs"]
+        assert all(run["provider_type"] == "mock" for run in body["runs"])
+
     def test_get_unknown_run_is_404(self, client: TestClient) -> None:
         assert client.get("/api/runs/ghost").status_code == 404
 
@@ -286,6 +293,11 @@ class TestPages:
         # the real-time comparison widget is embedded on the dashboard itself
         assert "Compare models in real time" in response.text
         assert 'id="pg-form"' in response.text
+        # static assets are cache-busted so a new build is never served stale
+        assert "styles.css?v=" in response.text
+        assert "playground.js?v=" in response.text
+        # simulated (mock-provider) runs are flagged in the history
+        assert 'class="tag-sim"' in response.text
 
     def test_dashboard_comparison_available_when_empty(self, tmp_path) -> None:
         app = create_app(str(tmp_path / "empty.db"))
@@ -305,6 +317,7 @@ class TestPages:
         assert response.status_code == 200
         assert "Score distribution" in response.text
         assert "Mean score by evaluator" in response.text
+        assert 'class="tag-sim"' in response.text  # mock-provider run is flagged
 
     def test_run_detail_outcome_filter(self, client: TestClient, seeded: dict[str, str]) -> None:
         response = client.get(f"/runs/{seeded['baseline']}", params={"outcome": "failed"})
