@@ -298,6 +298,9 @@ class TestPages:
         assert "playground.js?v=" in response.text
         # simulated (mock-provider) runs are flagged in the history
         assert 'class="tag-sim"' in response.text
+        # the overview carries per-run charts, not just the trend line
+        assert "Score distribution — latest run" in response.text
+        assert "Mean score by evaluator — latest run" in response.text
 
     def test_dashboard_comparison_available_when_empty(self, tmp_path) -> None:
         app = create_app(str(tmp_path / "empty.db"))

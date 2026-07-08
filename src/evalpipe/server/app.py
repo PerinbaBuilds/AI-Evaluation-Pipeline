@@ -251,6 +251,13 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
         chronological = list(reversed(completed))
         latest = completed[0] if completed else None
         previous = completed[1] if len(completed) > 1 else None
+
+        # Per-metric and score-distribution breakdowns for the most recent run, so
+        # the overview carries the same depth of charts as the run-detail page.
+        latest_scores: list[float] = []
+        if latest is not None:
+            latest_scores = [r.mean_score for r in storage.get_results(latest.id, limit=1000)]
+
         context = {
             "request": request,
             "records": records[:20],
@@ -267,6 +274,11 @@ def create_app(db_path: str = "evalpipe.db") -> FastAPI:
                     "run_id": record.id,
                 }
                 for record in chronological
+            ],
+            "latest_histogram": _histogram(latest_scores, bins=10) if latest_scores else [],
+            "latest_evaluator_means": [
+                {"label": name, "value": round(value, 4)}
+                for name, value in (latest.evaluator_means.items() if latest else [])
             ],
         }
         return templates.TemplateResponse(request, "dashboard.html", context)

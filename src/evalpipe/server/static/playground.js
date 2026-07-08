@@ -12,7 +12,7 @@
     mock: "sim-model",
     openai: "gpt-4o-mini",
     anthropic: "your Anthropic model id",
-    gemini: "gemini-1.5-flash (default)",
+    gemini: "gemini-2.0-flash (default)",
     groq: "llama-3.3-70b-versatile (default)",
     openrouter: "…:free (default)",
     ollama: "llama3.2 (default)",

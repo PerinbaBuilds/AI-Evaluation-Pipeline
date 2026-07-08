@@ -349,8 +349,10 @@ class TestBuildHostedProviders:
         from evalpipe.providers.gemini import GeminiProvider
 
         monkeypatch.setenv("GEMINI_API_KEY", "g-key")
-        provider = build_provider(GeminiProviderConfig(model="gemini-1.5-flash"))
+        provider = build_provider(GeminiProviderConfig())
         assert isinstance(provider, GeminiProvider)
+        # default must be a model the generateContent API still serves
+        assert provider.model == "gemini-2.0-flash"
 
     def test_anthropic_missing_key_fails(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalpipe.config import AnthropicProviderConfig

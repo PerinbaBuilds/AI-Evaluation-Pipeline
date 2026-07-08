@@ -107,7 +107,7 @@ class GeminiProviderConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["gemini"] = "gemini"
-    model: str = "gemini-1.5-flash"
+    model: str = "gemini-2.0-flash"
     base_url: str = "https://generativelanguage.googleapis.com"
     api_key_env: str = "GEMINI_API_KEY"
     api_key: str | None = Field(default=None, repr=False, exclude=True)  # inline BYO key
