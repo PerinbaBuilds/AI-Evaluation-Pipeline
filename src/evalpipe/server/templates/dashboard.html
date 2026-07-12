@@ -5,7 +5,7 @@
 
 {% block content %}
 <h1 class="page-title">Evaluation dashboard</h1>
-<p class="page-subtitle">Benchmark history, pass rates and model quality over time.</p>
+<p class="page-subtitle">See how your AI models perform over time. Each <strong>run</strong> sends a fixed set of test questions to a model and grades every answer — the cards below summarise your most recent run and your totals.</p>
 
 {% if not latest %}
 <div class="card empty-state">
@@ -21,31 +21,35 @@
     {% if delta is not none %}
     <div class="delta {{ 'up' if delta > 0 else ('down' if delta < 0 else 'flat') }}">
       {% if delta > 0 %}▲{% elif delta < 0 %}▼{% else %}—{% endif %}
-      {{ '%+.1f' % (delta * 100) }} pts vs previous run
+      {{ '%+.1f' % (delta * 100) }} pts vs the run before
     </div>
     {% endif %}
-    <div class="footnote">{{ latest.name }} · {{ latest.model }}</div>
+    <div class="desc">Share of the newest run's questions the model answered well enough to pass every check. Higher is better.</div>
+    <div class="footnote">Newest run: <strong>{{ latest.name }}</strong> · model <strong>{{ latest.model }}</strong> {{ sim_badge(latest.provider_type) }}</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Latest mean score</div>
     <div class="value">{{ '%.3f' % latest.mean_score }}</div>
-    <div class="footnote">across {{ latest.item_count }} items</div>
+    <div class="desc">Average answer quality on a <strong>0–1</strong> scale (1 = perfect), averaged across every metric.</div>
+    <div class="footnote">Across {{ latest.item_count }} test questions</div>
   </div>
   <div class="card stat-tile">
-    <div class="label">Total runs</div>
+    <div class="label">Evaluations run</div>
     <div class="value">{{ total_runs }}</div>
-    <div class="footnote">{{ total_items }} items evaluated</div>
+    <div class="desc">How many times you've tested a model against a question set so far.</div>
+    <div class="footnote">{{ total_items }} questions graded in total</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Estimated spend</div>
     <div class="value">${{ '%.2f' % total_cost }}</div>
-    <div class="footnote">across completed runs</div>
+    <div class="desc">Rough model/API cost of all runs, based on the number of tokens used.</div>
+    <div class="footnote">Across all completed runs</div>
   </div>
 </div>
 
 <div class="card chart-card">
   <h2>Pass rate over runs</h2>
-  <p class="card-note">Chronological, completed runs only. Hover or focus a point for details.</p>
+  <p class="card-note">Each dot is one evaluation, oldest to newest. A rising line means later models passed more of the test questions. Hover a dot for details.</p>
   <div class="chart" data-chart="line">
     <script type="application/json">{{ {'points': trend, 'format': 'percent'} | tojson }}</script>
   </div>
