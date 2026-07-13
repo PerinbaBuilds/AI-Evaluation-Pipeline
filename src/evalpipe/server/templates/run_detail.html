@@ -35,25 +35,31 @@
 </div>
 {% else %}
 
+<p class="page-subtitle" style="margin-top:-8px">Full results for this single run: the headline scores, how answers were spread out, where the model was strong or weak, and every question with the model's answer.</p>
+
 <div class="grid kpis">
   <div class="card stat-tile">
     <div class="label">Pass rate</div>
     <div class="value">{{ '%.1f' % (run.pass_rate * 100) }}%</div>
-    <div class="footnote">95% CI {{ '%.1f' % (pass_ci[0] * 100) }}% – {{ '%.1f' % (pass_ci[1] * 100) }}% (Wilson)</div>
+    <div class="desc">Share of questions answered well enough to pass every check.</div>
+    <div class="footnote">95% CI {{ '%.1f' % (pass_ci[0] * 100) }}% – {{ '%.1f' % (pass_ci[1] * 100) }}% (the true rate likely sits in this range)</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Mean score</div>
     <div class="value">{{ '%.3f' % run.mean_score }}</div>
-    <div class="footnote">{{ run.item_count }} items · {{ run.error_count }} error(s)</div>
+    <div class="desc">Average answer quality on a 0–1 scale, across all metrics.</div>
+    <div class="footnote">{{ run.item_count }} questions · {{ run.error_count }} error(s)</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Latency</div>
     <div class="value">{{ '%.0f' % run.latency_p50_ms }} ms</div>
+    <div class="desc">How long the model took to answer — typical (p50) and near‑worst (p95).</div>
     <div class="footnote">p50 · p95 {{ '%.0f' % run.latency_p95_ms }} ms</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Estimated cost</div>
     <div class="value">${{ '%.4f' % run.total_cost_usd }}</div>
+    <div class="desc">Rough API cost for this run, based on tokens used.</div>
     <div class="footnote">token-based estimate</div>
   </div>
 </div>
@@ -61,7 +67,7 @@
 <div class="grid cols-2">
   <div class="card chart-card">
     <h2>Score distribution</h2>
-    <p class="card-note">Per-item mean score across all evaluators, 10 bins.</p>
+    <p class="card-note">How many questions landed in each quality band (0 = wrong, 1 = perfect). Most bars bunched on the right means the model answered well overall.</p>
     <div class="chart" data-chart="bar">
       <script type="application/json">{{ {'bars': histogram, 'yLabel': 'items'} | tojson }}</script>
     </div>
@@ -77,7 +83,7 @@
   </div>
   <div class="card chart-card">
     <h2>Mean score by evaluator</h2>
-    <p class="card-note">How each metric graded this run, on a 0–1 scale.</p>
+    <p class="card-note">How each type of check graded this run (0–1). A short bar flags the quality dimension the model is weakest on.</p>
     <div class="chart" data-chart="hbar">
       <script type="application/json">{{ {'bars': evaluator_means, 'max': 1} | tojson }}</script>
     </div>
@@ -97,8 +103,8 @@
 <div class="card chart-card" style="margin-top:16px">
   <div class="filter-row" style="margin:0 0 6px">
     <div>
-      <h2>Subgroup analysis</h2>
-      <p class="card-note" style="margin:2px 0 0">Pass rate by <strong>{{ active_slice }}</strong> — where the model is strong or weak, not just the average.</p>
+      <h2>Where it's strong or weak</h2>
+      <p class="card-note" style="margin:2px 0 0">Pass rate split by <strong>{{ active_slice }}</strong>, so a good overall score can't hide a weak spot (e.g. "95% on easy, 20% on hard").</p>
     </div>
     <nav class="segmented" aria-label="Slice by metadata field">
       {% for key in slice_keys %}
@@ -139,14 +145,15 @@
 </div>
 {% endif %}
 
-<div class="filter-row">
-  <h2 style="font-size:16px;margin:0">Item results</h2>
+<div class="filter-row" style="margin-bottom:4px">
+  <h2 style="font-size:16px;margin:0">Every question</h2>
   <nav class="segmented" aria-label="Filter results by outcome">
     <a href="/runs/{{ run.id }}?outcome=all" {% if outcome == 'all' %}aria-current="true"{% endif %}>All</a>
     <a href="/runs/{{ run.id }}?outcome=passed" {% if outcome == 'passed' %}aria-current="true"{% endif %}>Passed</a>
     <a href="/runs/{{ run.id }}?outcome=failed" {% if outcome == 'failed' %}aria-current="true"{% endif %}>Failed</a>
   </nav>
 </div>
+<p class="card-note" style="margin:0 0 14px">Each question with its outcome, score, and the model's answer. Use <strong>Failed</strong> to jump straight to what went wrong; open <strong>Details</strong> on a row to see the prompt, expected answer, and per‑check scores.</p>
 
 <div class="card">
   <div class="table-wrap">

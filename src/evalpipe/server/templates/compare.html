@@ -5,12 +5,12 @@
 
 {% block content %}
 <h1 class="page-title">A/B comparison</h1>
-<p class="page-subtitle">Statistical comparison of two runs over their shared dataset items — pass rates (<span class="nowrap">two-proportion z-test</span>) and mean scores (<span class="nowrap">Welch's t-test</span>).</p>
+<p class="page-subtitle">Put two runs head‑to‑head to decide whether one model is <em>genuinely</em> better — or whether the difference is just luck. Pick your current model (A) and the new one you're testing (B); the tool checks if the gap is big enough to trust.</p>
 
 <form class="card" method="get" action="/compare" style="margin-bottom:16px">
   <div class="grid cols-2">
     <div class="field">
-      <label for="baseline">Baseline (A)</label>
+      <label for="baseline">Baseline (A) <span class="hint" style="display:inline;font-weight:400">— your current model</span></label>
       <select id="baseline" name="baseline" required>
         <option value="">Select a completed run…</option>
         {% for run in completed_runs %}
@@ -19,7 +19,7 @@
       </select>
     </div>
     <div class="field">
-      <label for="candidate">Candidate (B)</label>
+      <label for="candidate">Candidate (B) <span class="hint" style="display:inline;font-weight:400">— the new model you're testing</span></label>
       <select id="candidate" name="candidate" required>
         <option value="">Select a completed run…</option>
         {% for run in completed_runs %}
@@ -47,7 +47,7 @@
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8 12.5 2.5 2.5L16 9"/></svg>
   <div>
     <div class="title">Candidate is significantly better</div>
-    <div class="detail">Pass rate {{ '%.1f' % (z.proportion_a * 100) }}% → {{ '%.1f' % (z.proportion_b * 100) }}% ({{ '%+.1f' % (z.diff * 100) }} pts, p = {{ '%.4f' % z.p_value }}, α = {{ report.alpha }}).</div>
+    <div class="detail"><strong>The new model (B) passed more questions, and the gap is big enough to trust</strong> — unlikely to be random luck, so switching to B is justified.<br><span class="text-muted">Pass rate {{ '%.1f' % (z.proportion_a * 100) }}% → {{ '%.1f' % (z.proportion_b * 100) }}% ({{ '%+.1f' % (z.diff * 100) }} pts, p = {{ '%.4f' % z.p_value }} &lt; α = {{ report.alpha }}).</span></div>
   </div>
 </div>
 {% elif report.verdict == 'baseline_better' %}
@@ -55,7 +55,7 @@
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
   <div>
     <div class="title">Candidate is significantly worse — keep the baseline</div>
-    <div class="detail">Pass rate {{ '%.1f' % (z.proportion_a * 100) }}% → {{ '%.1f' % (z.proportion_b * 100) }}% ({{ '%+.1f' % (z.diff * 100) }} pts, p = {{ '%.4f' % z.p_value }}, α = {{ report.alpha }}).</div>
+    <div class="detail"><strong>The new model (B) did worse by a margin too large to be chance</strong> — stick with your current model (A).<br><span class="text-muted">Pass rate {{ '%.1f' % (z.proportion_a * 100) }}% → {{ '%.1f' % (z.proportion_b * 100) }}% ({{ '%+.1f' % (z.diff * 100) }} pts, p = {{ '%.4f' % z.p_value }} &lt; α = {{ report.alpha }}).</span></div>
   </div>
 </div>
 {% else %}
@@ -63,7 +63,7 @@
   {{ warn_icon() }}
   <div>
     <div class="title">No significant difference detected</div>
-    <div class="detail">Neither the pass-rate test (p = {{ '%.4f' % z.p_value }}) nor the score test (p = {{ '%.4f' % t.p_value }}) cleared α = {{ report.alpha }}. Consider a larger sample.</div>
+    <div class="detail"><strong>The two models are too close to call on this sample</strong> — the gap could just be noise, so don't switch on this evidence alone. Try more test questions.<br><span class="text-muted">Neither test cleared the α = {{ report.alpha }} bar (pass‑rate p = {{ '%.4f' % z.p_value }}, score p = {{ '%.4f' % t.p_value }}).</span></div>
   </div>
 </div>
 {% endif %}
@@ -78,21 +78,25 @@
   <div class="card stat-tile">
     <div class="label">Pass rate — A</div>
     <div class="value">{{ '%.1f' % (z.proportion_a * 100) }}%</div>
+    <div class="desc">How often your current model passed.</div>
     <div class="footnote">{{ report.baseline_name }}<br>CI {{ '%.1f' % (report.baseline_pass_ci[0] * 100) }}% – {{ '%.1f' % (report.baseline_pass_ci[1] * 100) }}%</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Pass rate — B</div>
     <div class="value">{{ '%.1f' % (z.proportion_b * 100) }}%</div>
+    <div class="desc">How often the new model passed.</div>
     <div class="footnote">{{ report.candidate_name }}<br>CI {{ '%.1f' % (report.candidate_pass_ci[0] * 100) }}% – {{ '%.1f' % (report.candidate_pass_ci[1] * 100) }}%</div>
   </div>
   <div class="card stat-tile">
     <div class="label">Lift (B − A)</div>
     <div class="value">{{ '%+.1f' % (z.diff * 100) }} pts</div>
+    <div class="desc">B minus A, in percentage points. Positive means the new model wins.</div>
     <div class="footnote">95% CI {{ '%+.1f' % (z.ci_low * 100) }} to {{ '%+.1f' % (z.ci_high * 100) }} pts</div>
   </div>
   <div class="card stat-tile">
-    <div class="label">Shared items</div>
+    <div class="label">Shared questions</div>
     <div class="value">{{ report.n_common }}</div>
+    <div class="desc">Questions both runs answered — the fair basis for the comparison.</div>
     <div class="footnote">{{ report.n_baseline_only + report.n_candidate_only }} excluded (present in one run only)</div>
   </div>
 </div>
@@ -100,7 +104,7 @@
 <div class="grid cols-2">
   <div class="card chart-card">
     <h2>Pass rate & mean score, side by side</h2>
-    <p class="card-note">Whiskers show 95% confidence intervals.</p>
+    <p class="card-note">Taller bar = better. The whiskers show the range the true value likely falls in (95% confidence); when two bars' whiskers overlap a lot, the gap between them may not be real.</p>
     <div class="chart-legend" aria-hidden="true">
       <span class="key"><span class="swatch" style="background:#2f6feb"></span>Baseline</span>
       <span class="key"><span class="swatch" style="background:#0ca678"></span>Candidate</span>
@@ -122,7 +126,7 @@
   </div>
   <div class="card">
     <h2>Statistical detail</h2>
-    <p class="card-note">Both tests are two-sided at α = {{ report.alpha }}.</p>
+    <p class="card-note">For the statistically minded. Quick guide: a <strong>p‑value</strong> below {{ report.alpha }} means the difference is unlikely to be chance; the <strong>95% CI</strong> is the plausible range of the true gap (if it crosses 0, it's inconclusive); <strong>effect size</strong> says how big the difference is.</p>
     <div class="table-wrap">
       <table class="data">
         <thead><tr><th scope="col">Statistic</th><th scope="col" class="num">Pass rate</th><th scope="col" class="num">Mean score</th></tr></thead>
@@ -142,8 +146,8 @@
 </div>
 
 <div class="card" style="margin-top:16px">
-  <h2>Item-level changes</h2>
-  <p class="card-note">Which specific items flipped outcome between the runs — the regressions an aggregate pass rate hides.</p>
+  <h2>Question-level changes</h2>
+  <p class="card-note">The exact questions that flipped between the two runs. Even when the overall pass rate goes up, some questions can quietly break — this shows which ones, so a "win" never hides a regression.</p>
   <div class="grid cols-2">
     <div>
       <p style="margin:0 0 4px"><span class="chip fail">{{ report.n_regressions }} regressed</span> <span class="text-muted">pass → fail</span></p>
